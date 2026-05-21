@@ -17,7 +17,7 @@ CATEGORIES = {
     "world": {
         "label": "World",
         "feeds": [
-            "https://apnews.com/apf-intlnews/rss",
+            "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/world/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
         ],
@@ -25,7 +25,7 @@ CATEGORIES = {
     "us": {
         "label": "U.S.",
         "feeds": [
-            "https://apnews.com/apf-us-news/rss",
+            "https://news.google.com/rss/headlines/section/topic/NATION?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.npr.org/1001/rss.xml",
             "https://feeds.bbci.co.uk/news/rss.xml",
         ],
@@ -33,7 +33,7 @@ CATEGORIES = {
     "business": {
         "label": "Business",
         "feeds": [
-            "https://apnews.com/apf-business/rss",
+            "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/business/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
         ],
@@ -41,6 +41,7 @@ CATEGORIES = {
     "tech": {
         "label": "Tech",
         "feeds": [
+            "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.arstechnica.com/arstechnica/index",
             "https://techcrunch.com/feed/",
         ],
@@ -48,7 +49,7 @@ CATEGORIES = {
     "science": {
         "label": "Science",
         "feeds": [
-            "https://apnews.com/apf-sciencehealth/rss",
+            "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
         ],
@@ -56,7 +57,7 @@ CATEGORIES = {
     "sports": {
         "label": "Sports",
         "feeds": [
-            "https://apnews.com/apf-sports/rss",
+            "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en-US&gl=US&ceid=US:en",
             "https://www.espn.com/espn/rss/news",
             "https://feeds.bbci.co.uk/sport/rss.xml",
         ],
