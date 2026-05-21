@@ -61,31 +61,61 @@ client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 # ── RSS FETCHING ─────────────────────────────────────────────────────────────
 
 def extract_image(entry, feed_title: str) -> dict:
-    """Try to extract an image URL and source credit from an RSS entry."""
-    url = ""
+    """Try every known RSS image location. Returns first usable URL found."""
+    import re as _re
 
-    # 1. media:content (most common in BBC, NYT)
-    media = getattr(entry, "media_content", [])
-    for m in media:
-        if isinstance(m, dict) and m.get("url", ""):
-            candidate = m["url"]
-            if any(candidate.lower().endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")):
-                url = candidate
-                break
-    if not url:
-        # 2. media:thumbnail
-        thumb = getattr(entry, "media_thumbnail", [])
-        if thumb and isinstance(thumb[0], dict):
-            url = thumb[0].get("url", "")
+    def is_valid(u):
+        if not u or len(u) < 10:
+            return False
+        low = u.lower()
+        # Skip tracking pixels and tiny images
+        if any(x in low for x in ["1x1", "pixel", "spacer", "tracking", "transparent"]):
+            return False
+        return True
 
-    if not url:
-        # 3. enclosures (some feeds use this)
-        for enc in getattr(entry, "enclosures", []):
-            if isinstance(enc, dict) and enc.get("type", "").startswith("image"):
-                url = enc.get("href", enc.get("url", ""))
-                break
+    # 1. media:thumbnail (BBC, many news feeds)
+    thumb = getattr(entry, "media_thumbnail", None) or []
+    if isinstance(thumb, list) and thumb:
+        u = thumb[0].get("url", "") if isinstance(thumb[0], dict) else ""
+        if is_valid(u):
+            return {"url": u, "credit": feed_title}
 
-    return {"url": url, "credit": feed_title if url else ""}
+    # 2. media:content
+    media = getattr(entry, "media_content", None) or []
+    for m in (media if isinstance(media, list) else []):
+        if not isinstance(m, dict):
+            continue
+        u = m.get("url", "")
+        t = m.get("type", "")
+        if is_valid(u) and ("image" in t or any(u.lower().endswith(e) for e in (".jpg", ".jpeg", ".png", ".webp"))):
+            return {"url": u, "credit": feed_title}
+
+    # 3. enclosures
+    for enc in (getattr(entry, "enclosures", None) or []):
+        if not isinstance(enc, dict):
+            continue
+        if "image" in enc.get("type", ""):
+            u = enc.get("href", enc.get("url", ""))
+            if is_valid(u):
+                return {"url": u, "credit": feed_title}
+
+    # 4. Parse HTML in content or summary for <img> tags
+    html_blob = ""
+    for field in ["content", "summary", "description"]:
+        val = getattr(entry, field, None) or entry.get(field, "")
+        if isinstance(val, list) and val:
+            html_blob = val[0].get("value", "") if isinstance(val[0], dict) else str(val[0])
+        elif isinstance(val, str):
+            html_blob = val
+        if html_blob:
+            break
+
+    for match in _re.finditer(r'<img[^>]+src=["\']([^"\']{15,})["\']', html_blob):
+        u = match.group(1)
+        if is_valid(u) and not u.startswith("data:"):
+            return {"url": u, "credit": feed_title}
+
+    return {"url": "", "credit": ""}
 
 
 def fetch_headlines(feeds: list[str], limit: int = HEADLINES_PER_CATEGORY) -> list[dict]:
@@ -221,13 +251,27 @@ def render_index(all_categories: list[dict], front_hero_cat: str) -> str:
         fade    = " fade-in" if visible else ""
         h_slug  = slug(hero["headline"])
         preview = hero["body"][:320].rstrip()
+        image   = hero.get("image", {"url": "", "credit": ""})
+
+        if image["url"]:
+            img_block = f'<img class="hero-image" src="{image["url"]}" alt="{hero["headline"]}" loading="lazy">'
+            inner_class = "hero-inner hero-inner--split"
+        else:
+            img_block = ""
+            inner_class = "hero-inner"
+
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
       <a href="articles/{cat_key}/{h_slug}.html">
-        <span class="tag">{cat_label}</span>
-        <h1>{hero["headline"]}</h1>
-        <p class="hero-summary">{preview}...</p>
-        <span class="meta">Today, {timestamp}</span>
+        <div class="{inner_class}">
+          <div class="hero-content">
+            <span class="tag">{cat_label}</span>
+            <h1>{hero["headline"]}</h1>
+            <p class="hero-summary">{preview}...</p>
+            <span class="meta">Today, {timestamp}</span>
+          </div>
+          {img_block}
+        </div>
       </a>
     </section>"""
 
@@ -414,6 +458,8 @@ def main():
 
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
+            # Attach hero image so render_index can use it for the two-column layout
+            data["hero"]["image"] = find_image(data["hero"]["headline"], headlines)
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')})")
 
