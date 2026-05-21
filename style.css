@@ -324,6 +324,28 @@ footer {
 .footer-links a { font-size: 12px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
 .footer-links a:hover { color: var(--text); }
 
+/* ── ARTICLE IMAGE ── */
+.article-image-wrap {
+  margin: 0 0 36px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.article-image {
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  display: block;
+}
+
+.article-image-credit {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 0 0;
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
+
 /* ── ARTICLE PAGE ── */
 .article-page {
   max-width: 680px;
@@ -399,4 +421,5 @@ footer {
   .articles-grid { grid-template-columns: 1fr; }
   .support-btn { display: none; }
   .header-inner { gap: 16px; }
+  .article-image { height: 220px; }
 }
