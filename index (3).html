@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plain - News without the noise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="/" class="wordmark">plain</a>
+      <nav class="category-nav">
+        <button class="cat-btn active" data-cat="all">All</button>
+        <button class="cat-btn" data-cat="world">World</button>
+        <button class="cat-btn" data-cat="us">U.S.</button>
+        <button class="cat-btn" data-cat="business">Business</button>
+        <button class="cat-btn" data-cat="tech">Tech</button>
+        <button class="cat-btn" data-cat="science">Science</button>
+      </nav>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
+        <button class="support-btn" onclick="document.getElementById(String.fromCharCode(115,117,112,112,111,114,116)).scrollIntoView({behavior:String.fromCharCode(115,109,111,111,116,104)})">Support Plain</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="update-bar">
+    Updated at <strong>3:00 PM ET</strong> &mdash; Next update in <strong id="countdown">57 min</strong>
+  </div>
+
+  <main>
+    <section class="hero fade-in">
+      <a href="#">
+        <span class="tag">U.S.</span>
+        <h1>Federal Reserve Holds Rates Steady, Signals Patience Amid Mixed Economic Data</h1>
+        <p class="hero-summary">The Fed voted unanimously to keep the benchmark rate unchanged, citing persistent inflation in services alongside a softening labor market. Chair Powell indicated the committee sees no urgency to move in either direction before year-end.</p>
+        <span class="meta">Today, 3:00 PM ET</span>
+      </a>
+    </section>
+
+    <p class="section-label">Latest</p>
+
+    <div class="articles-grid" id="articlesGrid">
+      <a class="article-card fade-in" href="#" data-cat="world">
+        <span class="card-tag">World</span>
+        <h2 class="card-headline">UN Climate Talks Stall Over Financing Gap Between Wealthy and Developing Nations</h2>
+        <p class="card-summary">Negotiations in Geneva broke down late Wednesday after rich nations declined to increase their climate fund commitments, drawing sharp criticism from African and Pacific delegations.</p>
+        <span class="card-time">2:12 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="tech">
+        <span class="card-tag">Tech</span>
+        <h2 class="card-headline">Apple Delays AI Feature Rollout to Next Quarter Following Internal Testing Concerns</h2>
+        <p class="card-summary">The company informed developers that several on-device AI capabilities would not ship with the next software update, citing reliability issues discovered during final-stage testing.</p>
+        <span class="card-time">1:48 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="business">
+        <span class="card-tag">Business</span>
+        <h2 class="card-headline">Retail Sales Dip in April as Consumers Pull Back on Discretionary Spending</h2>
+        <p class="card-summary">Commerce Department data showed a 0.4 percent decline in retail sales last month, led by drops in electronics and furniture, as households continue to prioritize essentials over wants.</p>
+        <span class="card-time">1:30 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="world">
+        <span class="card-tag">World</span>
+        <h2 class="card-headline">Germany Coalition Government Reaches Deal on Defense Budget After Weeks of Deadlock</h2>
+        <p class="card-summary">The three-party ruling coalition agreed to increase military spending by 12 percent over two years, clearing a major obstacle that had threatened to collapse the government ahead of elections.</p>
+        <span class="card-time">12:55 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="science">
+        <span class="card-tag">Science</span>
+        <h2 class="card-headline">Researchers Identify Mechanism Linking Sleep Disruption to Long-Term Memory Failure</h2>
+        <p class="card-summary">A study in Nature Neuroscience found fragmented sleep interrupts the hippocampal replay process essential for transferring short-term memories into durable long-term storage.</p>
+        <span class="card-time">12:20 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="us">
+        <span class="card-tag">U.S.</span>
+        <h2 class="card-headline">Senate Passes Bipartisan Water Infrastructure Bill After Two Years of Negotiation</h2>
+        <p class="card-summary">The legislation authorizes 34 billion dollars for aging water systems across 48 states, with particular focus on communities where lead pipe replacement has been delayed for over a decade.</p>
+        <span class="card-time">11:44 AM ET</span>
+      </a>
+    </div>
+
+    <div class="support-box" id="support">
+      <div class="support-box-text">
+        <p>Plain is free to read. No ads. No agenda.</p>
+        <span>If it is worth something to you, a small contribution keeps it running.</span>
+      </div>
+      <button class="support-box-btn">Support Plain</button>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-wordmark">plain</span>
+      <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#support">Support</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
