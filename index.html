@@ -1,120 +1,110 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plain - News without the noise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-/* -- THEME VARIABLES -- */
-:root {
-  --bg: #FAFAF8; --bg-secondary: #F0F0ED; --text: #0F0F0E;
-  --text-secondary: #6B6B65; --text-muted: #9B9B93;
-  --border: #E4E4DF; --accent: #C84B31;
-}
-[data-theme="dark"] {
-  --bg: #0F0F0E; --bg-secondary: #1C1C1A; --text: #F0F0EE;
-  --text-secondary: #8A8A82; --text-muted: #5A5A54;
-  --border: #2A2A27; --accent: #E05A3A;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0F0F0E; --bg-secondary: #1C1C1A; --text: #F0F0EE;
-    --text-secondary: #8A8A82; --text-muted: #5A5A54;
-    --border: #2A2A27; --accent: #E05A3A;
-  }
-}
+  <header>
+    <div class="header-inner">
+      <a href="/" class="wordmark">plain</a>
+      <nav class="category-nav">
+        <button class="cat-btn active" data-cat="all">All</button>
+        <button class="cat-btn" data-cat="world">World</button>
+        <button class="cat-btn" data-cat="us">U.S.</button>
+        <button class="cat-btn" data-cat="business">Business</button>
+        <button class="cat-btn" data-cat="tech">Tech</button>
+        <button class="cat-btn" data-cat="science">Science</button>
+      </nav>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
+        <button class="support-btn" onclick="document.getElementById(String.fromCharCode(115,117,112,112,111,114,116)).scrollIntoView({behavior:String.fromCharCode(115,109,111,111,116,104)})">Support Plain</button>
+      </div>
+    </div>
+  </header>
 
-/* -- BASE -- */
-body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.2s, color 0.2s; }
+  <div class="update-bar">
+    Updated at <strong>3:00 PM ET</strong> &mdash; Next update in <strong id="countdown">57 min</strong>
+  </div>
 
-/* -- HEADER -- */
-header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); }
-.header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 28px; }
-.wordmark { font-family: "Fraunces", serif; font-size: 22px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; flex-shrink: 0; }
-.category-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
-.category-nav::-webkit-scrollbar { display: none; }
-.cat-btn { background: none; border: none; padding: 6px 13px; border-radius: 20px; font-family: "DM Sans", sans-serif; font-size: 13px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
-.cat-btn:hover { background: var(--bg-secondary); color: var(--text); }
-.cat-btn.active { background: var(--text); color: var(--bg); font-weight: 500; }
-.header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.theme-toggle { background: none; border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 14px; transition: all 0.15s; }
-.theme-toggle:hover { background: var(--bg-secondary); color: var(--text); }
-.support-btn { background: none; color: var(--accent); border: 1px solid var(--accent); padding: 7px 16px; border-radius: 20px; font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-.support-btn:hover { background: var(--accent); color: white; }
+  <main>
+    <section class="hero fade-in">
+      <a href="#">
+        <span class="tag">U.S.</span>
+        <h1>Federal Reserve Holds Rates Steady, Signals Patience Amid Mixed Economic Data</h1>
+        <p class="hero-summary">The Fed voted unanimously to keep the benchmark rate unchanged, citing persistent inflation in services alongside a softening labor market. Chair Powell indicated the committee sees no urgency to move in either direction before year-end.</p>
+        <span class="meta">Today, 3:00 PM ET</span>
+      </a>
+    </section>
 
-/* -- UPDATE BAR -- */
-.update-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 7px 24px; text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.02em; }
-.update-bar strong { color: var(--accent); font-weight: 500; }
+    <p class="section-label">Latest</p>
 
-/* -- MAIN -- */
-main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
+    <div class="articles-grid" id="articlesGrid">
+      <a class="article-card fade-in" href="#" data-cat="world">
+        <span class="card-tag">World</span>
+        <h2 class="card-headline">UN Climate Talks Stall Over Financing Gap Between Wealthy and Developing Nations</h2>
+        <p class="card-summary">Negotiations in Geneva broke down late Wednesday after rich nations declined to increase their climate fund commitments, drawing sharp criticism from African and Pacific delegations.</p>
+        <span class="card-time">2:12 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="tech">
+        <span class="card-tag">Tech</span>
+        <h2 class="card-headline">Apple Delays AI Feature Rollout to Next Quarter Following Internal Testing Concerns</h2>
+        <p class="card-summary">The company informed developers that several on-device AI capabilities would not ship with the next software update, citing reliability issues discovered during final-stage testing.</p>
+        <span class="card-time">1:48 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="business">
+        <span class="card-tag">Business</span>
+        <h2 class="card-headline">Retail Sales Dip in April as Consumers Pull Back on Discretionary Spending</h2>
+        <p class="card-summary">Commerce Department data showed a 0.4 percent decline in retail sales last month, led by drops in electronics and furniture, as households continue to prioritize essentials over wants.</p>
+        <span class="card-time">1:30 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="world">
+        <span class="card-tag">World</span>
+        <h2 class="card-headline">Germany Coalition Government Reaches Deal on Defense Budget After Weeks of Deadlock</h2>
+        <p class="card-summary">The three-party ruling coalition agreed to increase military spending by 12 percent over two years, clearing a major obstacle that had threatened to collapse the government ahead of elections.</p>
+        <span class="card-time">12:55 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="science">
+        <span class="card-tag">Science</span>
+        <h2 class="card-headline">Researchers Identify Mechanism Linking Sleep Disruption to Long-Term Memory Failure</h2>
+        <p class="card-summary">A study in Nature Neuroscience found fragmented sleep interrupts the hippocampal replay process essential for transferring short-term memories into durable long-term storage.</p>
+        <span class="card-time">12:20 PM ET</span>
+      </a>
+      <a class="article-card fade-in" href="#" data-cat="us">
+        <span class="card-tag">U.S.</span>
+        <h2 class="card-headline">Senate Passes Bipartisan Water Infrastructure Bill After Two Years of Negotiation</h2>
+        <p class="card-summary">The legislation authorizes 34 billion dollars for aging water systems across 48 states, with particular focus on communities where lead pipe replacement has been delayed for over a decade.</p>
+        <span class="card-time">11:44 AM ET</span>
+      </a>
+    </div>
 
-/* -- HERO -- */
-.hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; }
-.tag { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
-.hero h1 { font-family: "Fraunces", serif; font-size: clamp(30px, 4.5vw, 52px); font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 16px; transition: color 0.15s; }
-.hero-summary { font-size: 16px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; }
-.hero-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.meta { font-size: 11px; color: var(--text-muted); letter-spacing: 0.03em; }
+    <div class="support-box" id="support">
+      <div class="support-box-text">
+        <p>Plain is free to read. No ads. No agenda.</p>
+        <span>If it is worth something to you, a small contribution keeps it running.</span>
+      </div>
+      <button class="support-box-btn">Support Plain</button>
+    </div>
+  </main>
 
-/* -- EXPAND / COLLAPSE -- */
-.expand-btn { background: none; border: none; color: var(--accent); font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; padding: 0; transition: opacity 0.15s; }
-.expand-btn:hover { opacity: 0.7; }
-.collapse-btn { background: none; border: none; color: var(--text-muted); font-family: "DM Sans", sans-serif; font-size: 12px; cursor: pointer; padding: 12px 0 0; display: block; transition: color 0.15s; }
-.collapse-btn:hover { color: var(--text); }
-.article-expand { display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
-.article-expand.open { display: block; }
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-wordmark">plain</span>
+      <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#support">Support</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
 
-/* Hero expanded body — two columns on desktop */
-.hero-expand-body { column-count: 2; column-gap: 48px; }
-.hero-expand-body p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 18px; break-inside: avoid; }
-
-/* Card expanded body — single column */
-.card-expand-body p { font-size: 14px; line-height: 1.75; color: var(--text-secondary); margin-bottom: 14px; }
-
-/* -- SECTION LABEL -- */
-.section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; }
-
-/* -- ARTICLE GRID -- */
-.articles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.article-card { background: var(--bg); padding: 24px 22px; color: inherit; display: block; transition: background 0.15s; }
-.article-card:hover { background: var(--bg-secondary); }
-.card-tag { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; display: block; }
-.card-headline { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; line-height: 1.3; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text); }
-.card-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 14px; }
-.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.card-time { font-size: 11px; color: var(--text-muted); letter-spacing: 0.02em; }
-
-/* -- SUPPORT BOX -- */
-.support-box { margin-top: 48px; border: 1px solid var(--border); border-radius: 10px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: var(--bg-secondary); }
-.support-box-text p { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
-.support-box-text span { font-size: 13px; color: var(--text-secondary); }
-.support-box-btn { background: var(--accent); color: white; border: none; padding: 11px 24px; border-radius: 24px; font-family: "DM Sans", sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; flex-shrink: 0; }
-.support-box-btn:hover { opacity: 0.85; }
-
-/* -- FOOTER -- */
-footer { border-top: 1px solid var(--border); padding: 28px 24px; margin-top: 60px; }
-.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
-.footer-wordmark { font-family: "Fraunces", serif; font-size: 17px; color: var(--accent); font-weight: 600; }
-.footer-tagline { font-size: 13px; color: var(--text-muted); }
-.footer-links { display: flex; gap: 20px; }
-.footer-links a { font-size: 12px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-.footer-links a:hover { color: var(--text); }
-
-/* -- ANIMATIONS -- */
-.fade-in { opacity: 0; transform: translateY(10px); animation: fadeUp 0.45s ease forwards; }
-@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-.hero.fade-in              { animation-delay: 0.05s; }
-.article-card:nth-child(1) { animation-delay: 0.10s; }
-.article-card:nth-child(2) { animation-delay: 0.15s; }
-.article-card:nth-child(3) { animation-delay: 0.20s; }
-.article-card:nth-child(4) { animation-delay: 0.25s; }
-.article-card:nth-child(5) { animation-delay: 0.30s; }
-.article-card:nth-child(6) { animation-delay: 0.35s; }
-
-/* -- RESPONSIVE -- */
-@media (max-width: 900px) { .articles-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 680px) {
-  .support-box { flex-direction: column; align-items: flex-start; }
-  .hero-expand-body { column-count: 1; }
-}
-@media (max-width: 580px) {
-  .articles-grid { grid-template-columns: 1fr; }
-  .support-btn { display: none; }
-  .header-inner { gap: 16px; }
-}
+  <script src="main.js"></script>
+</body>
+</html>
