@@ -266,6 +266,7 @@ def render_index(all_categories: list[dict], front_hero_cat: str) -> str:
 
 def render_article(cat_key: str, cat_label: str, headline: str, body: str, timestamp: str) -> str:
     """Build an individual article page."""
+    paragraphs = "".join(f"<p>{para.strip()}</p>" for para in body.split("\n\n") if para.strip())
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -302,7 +303,7 @@ def render_article(cat_key: str, cat_label: str, headline: str, body: str, times
     <h1 class="article-headline">{headline}</h1>
     <p class="article-meta">{timestamp}</p>
     <div class="article-body">
-      {''.join(f'<p>{para.strip()}</p>' for para in body.split('\n\n') if para.strip())}
+      {paragraphs}
     </div>
     <p class="article-note">This article was written by Plain's AI editorial engine based on reporting from wire services.</p>
   </main>
