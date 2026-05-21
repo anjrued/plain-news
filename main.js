@@ -30,6 +30,13 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     const cat = btn.dataset.cat;
+
+    // Switch hero
+    document.querySelectorAll("[data-cat-hero]").forEach(hero => {
+      hero.style.display = hero.dataset.catHero === cat ? "block" : "none";
+    });
+
+    // Filter cards
     document.querySelectorAll(".article-card").forEach(card => {
       card.style.display = (cat === "all" || card.dataset.cat === cat) ? "block" : "none";
     });
