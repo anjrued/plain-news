@@ -24,7 +24,7 @@
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
-        <button class="support-btn" onclick="document.getElementById(String.fromCharCode(115,117,112,112,111,114,116)).scrollIntoView({behavior:String.fromCharCode(115,109,111,111,116,104)})">Support Plain</button>
+        <button class="support-btn" onclick="document.getElementById('support').scrollIntoView({behavior:'smooth'})">Support Plain</button>
       </div>
     </div>
   </header>
@@ -34,54 +34,132 @@
   </div>
 
   <main>
-    <section class="hero fade-in">
-      <a href="#">
-        <span class="tag">U.S.</span>
-        <h1>Federal Reserve Holds Rates Steady, Signals Patience Amid Mixed Economic Data</h1>
-        <p class="hero-summary">The Fed voted unanimously to keep the benchmark rate unchanged, citing persistent inflation in services alongside a softening labor market. Chair Powell indicated the committee sees no urgency to move in either direction before year-end.</p>
+
+    <!-- HERO -->
+    <section class="hero fade-in" data-cat-hero="all">
+      <span class="tag">U.S.</span>
+      <h1>Federal Reserve Holds Rates Steady, Signals Patience Amid Mixed Economic Data</h1>
+      <p class="hero-summary">The Fed voted unanimously to keep the benchmark rate unchanged, citing persistent inflation in services alongside a softening labor market. Chair Powell indicated the committee sees no urgency to move in either direction before year-end.</p>
+      <div class="hero-foot">
         <span class="meta">Today, 3:00 PM ET</span>
-      </a>
+        <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+      </div>
+      <div class="article-expand hero-expand">
+        <div class="hero-expand-body">
+          <p>The Federal Reserve held its benchmark interest rate steady on Wednesday, as policymakers opted for caution amid a mixed set of economic signals that have complicated the outlook for monetary policy this year.</p>
+          <p>In a unanimous decision, the Federal Open Market Committee left the federal funds rate in its current target range, resisting pressure from both sides of the policy debate. Officials cited continued stickiness in services inflation as a reason not to cut, while acknowledging that labor market conditions have cooled from their peak.</p>
+          <p>Chair Jerome Powell, speaking at a press conference following the decision, emphasized that the committee remains data-dependent and sees no compelling case to move rates in either direction before gathering more information on inflation trends and economic growth. He pushed back on suggestions that the Fed was behind the curve, noting that the current policy stance remains appropriate given the uncertainty in the environment.</p>
+        </div>
+        <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+      </div>
     </section>
 
     <p class="section-label">Latest</p>
 
     <div class="articles-grid" id="articlesGrid">
-      <a class="article-card fade-in" href="#" data-cat="world">
+
+      <div class="article-card fade-in" data-cat="world">
         <span class="card-tag">World</span>
         <h2 class="card-headline">UN Climate Talks Stall Over Financing Gap Between Wealthy and Developing Nations</h2>
-        <p class="card-summary">Negotiations in Geneva broke down late Wednesday after rich nations declined to increase their climate fund commitments, drawing sharp criticism from African and Pacific delegations.</p>
-        <span class="card-time">2:12 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="#" data-cat="tech">
+        <p class="card-summary">Negotiations in Geneva broke down after rich nations declined to increase climate fund commitments.</p>
+        <div class="card-foot">
+          <span class="card-time">2:12 PM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>Negotiations in Geneva broke down late Wednesday after wealthy nations declined to increase their climate fund commitments, drawing sharp criticism from African and Pacific delegations who called the offers inadequate.</p>
+            <p>The impasse centers on a financing gap estimated at over $300 billion annually that developing nations say is necessary to fund adaptation and transition efforts. Without a breakthrough, the next scheduled summit faces the prospect of arriving without a binding framework in place.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
+      <div class="article-card fade-in" data-cat="tech">
         <span class="card-tag">Tech</span>
         <h2 class="card-headline">Apple Delays AI Feature Rollout to Next Quarter Following Internal Testing Concerns</h2>
-        <p class="card-summary">The company informed developers that several on-device AI capabilities would not ship with the next software update, citing reliability issues discovered during final-stage testing.</p>
-        <span class="card-time">1:48 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="#" data-cat="business">
+        <p class="card-summary">Several on-device AI capabilities will not ship with the next software update.</p>
+        <div class="card-foot">
+          <span class="card-time">1:48 PM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>Apple informed developers that several on-device AI capabilities would not ship with the next scheduled software update, citing reliability issues discovered during final-stage testing that the company said required more time to resolve.</p>
+            <p>The delay affects features that had been highlighted during the company's developer conference earlier this year. Analysts noted the setback adds pressure on Apple to demonstrate meaningful AI integration as competitors continue shipping similar capabilities.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
+      <div class="article-card fade-in" data-cat="business">
         <span class="card-tag">Business</span>
         <h2 class="card-headline">Retail Sales Dip in April as Consumers Pull Back on Discretionary Spending</h2>
-        <p class="card-summary">Commerce Department data showed a 0.4 percent decline in retail sales last month, led by drops in electronics and furniture, as households continue to prioritize essentials over wants.</p>
-        <span class="card-time">1:30 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="#" data-cat="world">
+        <p class="card-summary">Commerce Department data showed a 0.4 percent decline led by drops in electronics and furniture.</p>
+        <div class="card-foot">
+          <span class="card-time">1:30 PM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>Retail sales fell 0.4 percent in April as consumers pulled back on discretionary purchases, with the sharpest declines recorded in electronics and home furnishings. The Commerce Department report pointed to ongoing pressure on household budgets from elevated prices and tighter credit conditions.</p>
+            <p>Economists said the data reinforced the view that consumer spending is moderating from the elevated pace seen earlier in the year, though core categories including food and health remained relatively stable.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
+      <div class="article-card fade-in" data-cat="world">
         <span class="card-tag">World</span>
         <h2 class="card-headline">Germany Coalition Government Reaches Deal on Defense Budget After Weeks of Deadlock</h2>
-        <p class="card-summary">The three-party ruling coalition agreed to increase military spending by 12 percent over two years, clearing a major obstacle that had threatened to collapse the government ahead of elections.</p>
-        <span class="card-time">12:55 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="#" data-cat="science">
+        <p class="card-summary">The three-party coalition agreed to increase military spending by 12 percent over two years.</p>
+        <div class="card-foot">
+          <span class="card-time">12:55 PM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>Germany's three-party ruling coalition reached an agreement on defense spending after weeks of internal deadlock, committing to a 12 percent increase in the military budget over two years in a deal that cleared a significant threat to the government's stability.</p>
+            <p>The compromise was brokered after the smaller coalition partners secured concessions on social spending priorities. The agreement still requires parliamentary approval but is expected to pass given the coalition's majority.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
+      <div class="article-card fade-in" data-cat="science">
         <span class="card-tag">Science</span>
         <h2 class="card-headline">Researchers Identify Mechanism Linking Sleep Disruption to Long-Term Memory Failure</h2>
-        <p class="card-summary">A study in Nature Neuroscience found fragmented sleep interrupts the hippocampal replay process essential for transferring short-term memories into durable long-term storage.</p>
-        <span class="card-time">12:20 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="#" data-cat="us">
+        <p class="card-summary">Fragmented sleep interrupts hippocampal replay essential for long-term memory storage.</p>
+        <div class="card-foot">
+          <span class="card-time">12:20 PM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>A study published in Nature Neuroscience identified a specific neurological mechanism by which disrupted sleep interferes with memory consolidation, finding that fragmented sleep prevents the hippocampal replay sequences that transfer experiences into durable long-term storage.</p>
+            <p>Researchers said the findings help explain why poor sleep quality, not just insufficient sleep duration, has been associated with cognitive decline. The work may point toward targeted interventions for sleep-related memory disorders.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
+      <div class="article-card fade-in" data-cat="us">
         <span class="card-tag">U.S.</span>
         <h2 class="card-headline">Senate Passes Bipartisan Water Infrastructure Bill After Two Years of Negotiation</h2>
-        <p class="card-summary">The legislation authorizes 34 billion dollars for aging water systems across 48 states, with particular focus on communities where lead pipe replacement has been delayed for over a decade.</p>
-        <span class="card-time">11:44 AM ET</span>
-      </a>
+        <p class="card-summary">The legislation authorizes $34 billion for aging water systems across 48 states.</p>
+        <div class="card-foot">
+          <span class="card-time">11:44 AM ET</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand">
+          <div class="card-expand-body">
+            <p>The Senate passed a bipartisan water infrastructure bill on Wednesday, authorizing $34 billion in federal funding for aging water systems across 48 states after two years of on-and-off negotiations that repeatedly stalled over spending disagreements.</p>
+            <p>The legislation prioritizes communities where lead pipe replacement has been delayed for over a decade and includes provisions for rural water access programs that had been a sticking point in earlier negotiations.</p>
+          </div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
+      </div>
+
     </div>
 
     <div class="support-box" id="support">
@@ -91,6 +169,7 @@
       </div>
       <button class="support-box-btn">Support Plain</button>
     </div>
+
   </main>
 
   <footer>
