@@ -60,26 +60,69 @@ client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 # ── RSS FETCHING ─────────────────────────────────────────────────────────────
 
+def extract_image(entry, feed_title: str) -> dict:
+    """Try to extract an image URL and source credit from an RSS entry."""
+    url = ""
+
+    # 1. media:content (most common in BBC, NYT)
+    media = getattr(entry, "media_content", [])
+    for m in media:
+        if isinstance(m, dict) and m.get("url", ""):
+            candidate = m["url"]
+            if any(candidate.lower().endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".webp")):
+                url = candidate
+                break
+    if not url:
+        # 2. media:thumbnail
+        thumb = getattr(entry, "media_thumbnail", [])
+        if thumb and isinstance(thumb[0], dict):
+            url = thumb[0].get("url", "")
+
+    if not url:
+        # 3. enclosures (some feeds use this)
+        for enc in getattr(entry, "enclosures", []):
+            if isinstance(enc, dict) and enc.get("type", "").startswith("image"):
+                url = enc.get("href", enc.get("url", ""))
+                break
+
+    return {"url": url, "credit": feed_title if url else ""}
+
+
 def fetch_headlines(feeds: list[str], limit: int = HEADLINES_PER_CATEGORY) -> list[dict]:
     """Pull entries from a list of RSS feeds, deduplicate by title."""
     seen, entries = set(), []
     for url in feeds:
         try:
             feed = feedparser.parse(url)
+            feed_title = feed.feed.get("title", "")
             for entry in feed.entries:
                 title = entry.get("title", "").strip()
                 if not title or title.lower() in seen:
                     continue
                 seen.add(title.lower())
+                image = extract_image(entry, feed_title)
                 entries.append({
-                    "title":   title,
-                    "summary": entry.get("summary", entry.get("description", ""))[:400],
-                    "link":    entry.get("link", ""),
+                    "title":     title,
+                    "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "link":      entry.get("link", ""),
                     "published": entry.get("published", ""),
+                    "image_url": image["url"],
+                    "image_credit": image["credit"],
                 })
         except Exception as e:
             print(f"  Feed error ({url}): {e}")
     return entries[:limit]
+
+
+def find_image(headline: str, entries: list[dict]) -> dict:
+    """Match Claude's chosen headline back to the RSS entry to retrieve its image."""
+    h = headline.lower()
+    for entry in entries:
+        t = entry.get("title", "").lower()
+        # Match on first 50 chars of either string overlapping
+        if t[:50] in h or h[:50] in t:
+            return {"url": entry.get("image_url", ""), "credit": entry.get("image_credit", "")}
+    return {"url": "", "credit": ""}
 
 
 # ── CLAUDE EDITORIAL ENGINE ──────────────────────────────────────────────────
@@ -169,12 +212,30 @@ def render_index(all_categories: list[dict], front_hero_cat: str) -> str:
 
     timestamp = now_et()
 
-    # Pick the front page hero (highest urgency_score among category heroes)
-    hero_data = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
-    hero = hero_data["hero"]
-    hero_slug = slug(hero["headline"])
+    # "All" hero = highest urgency story across all categories
+    top_cat = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
 
-    # Build card HTML for all non-hero categories
+    # Build hero sections — one per category + one for "all"
+    def hero_section(cat_key, cat_label, hero, visible):
+        display = "" if visible else ' style="display:none"'
+        fade    = " fade-in" if visible else ""
+        h_slug  = slug(hero["headline"])
+        preview = hero["body"][:320].rstrip()
+        return f"""
+    <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
+      <a href="articles/{cat_key}/{h_slug}.html">
+        <span class="tag">{cat_label}</span>
+        <h1>{hero["headline"]}</h1>
+        <p class="hero-summary">{preview}...</p>
+        <span class="meta">Today, {timestamp}</span>
+      </a>
+    </section>"""
+
+    heroes_html = hero_section("all", top_cat["category_label"], top_cat["hero"], visible=True)
+    for cat in all_categories:
+        heroes_html += hero_section(cat["category_key"], cat["category_label"], cat["hero"], visible=False)
+
+    # Build card grid — all categories, filtered client-side
     cards_html = ""
     for cat in all_categories:
         for card in cat["cards"]:
@@ -223,14 +284,7 @@ def render_index(all_categories: list[dict], front_hero_cat: str) -> str:
   </div>
 
   <main>
-    <section class="hero fade-in">
-      <a href="articles/{hero_data['category_key']}/{hero_slug}.html">
-        <span class="tag">{hero_data['category_label']}</span>
-        <h1>{hero['headline']}</h1>
-        <p class="hero-summary">{hero['body'][:320].rstrip()}...</p>
-        <span class="meta">Today, {timestamp}</span>
-      </a>
-    </section>
+    {heroes_html}
 
     <p class="section-label">Latest</p>
 
@@ -264,9 +318,17 @@ def render_index(all_categories: list[dict], front_hero_cat: str) -> str:
 </html>"""
 
 
-def render_article(cat_key: str, cat_label: str, headline: str, body: str, timestamp: str) -> str:
+def render_article(cat_key: str, cat_label: str, headline: str, body: str, timestamp: str,
+                   image_url: str = "", image_credit: str = "") -> str:
     """Build an individual article page."""
     paragraphs = "".join(f"<p>{para.strip()}</p>" for para in body.split("\n\n") if para.strip())
+    if image_url:
+        image_html = f'''  <figure class="article-image-wrap">
+      <img class="article-image" src="{image_url}" alt="{headline}" loading="lazy">
+      <figcaption class="article-image-credit">Image: {image_credit}</figcaption>
+    </figure>'''
+    else:
+        image_html = ""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -302,6 +364,7 @@ def render_article(cat_key: str, cat_label: str, headline: str, body: str, times
     <span class="tag">{cat_label}</span>
     <h1 class="article-headline">{headline}</h1>
     <p class="article-meta">{timestamp}</p>
+    {image_html}
     <div class="article-body">
       {paragraphs}
     </div>
@@ -357,18 +420,22 @@ def main():
             # Write hero article page
             cat_dir = ARTICLES_DIR / cat_key
             cat_dir.mkdir(exist_ok=True)
+            hero_image = find_image(data["hero"]["headline"], headlines)
             hero_html = render_article(
                 cat_key, cat_config["label"],
-                data["hero"]["headline"], data["hero"]["body"], timestamp
+                data["hero"]["headline"], data["hero"]["body"], timestamp,
+                image_url=hero_image["url"], image_credit=hero_image["credit"]
             )
             hero_path = cat_dir / f"{slug(data['hero']['headline'])}.html"
             hero_path.write_text(hero_html, encoding="utf-8")
 
             # Write card article pages (stub pages — body is the summary for now)
             for card in data["cards"]:
+                card_image = find_image(card["headline"], headlines)
                 card_html = render_article(
                     cat_key, cat_config["label"],
-                    card["headline"], card["summary"], timestamp
+                    card["headline"], card["summary"], timestamp,
+                    image_url=card_image["url"], image_credit=card_image["credit"]
                 )
                 card_path = cat_dir / f"{slug(card['headline'])}.html"
                 card_path.write_text(card_html, encoding="utf-8")
