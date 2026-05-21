@@ -1,304 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plain - News without the noise</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <header>
-    <div class="header-inner">
-      <a href="/" class="wordmark">plain</a>
-      <nav class="category-nav">
-        <button class="cat-btn active" data-cat="all">All</button>
-        <button class="cat-btn" data-cat="world">World</button>
-        <button class="cat-btn" data-cat="us">U.S.</button>
-        <button class="cat-btn" data-cat="business">Business</button>
-        <button class="cat-btn" data-cat="tech">Tech</button>
-        <button class="cat-btn" data-cat="science">Science</button>
-      </nav>
-      <div class="header-actions">
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
-        <button class="support-btn" onclick="document.getElementById('support').scrollIntoView({behavior:'smooth'})">Support Plain</button>
-      </div>
-    </div>
-  </header>
+/* -- THEME VARIABLES -- */
+:root {
+  --bg: #FAFAF8; --bg-secondary: #F0F0ED; --text: #0F0F0E;
+  --text-secondary: #6B6B65; --text-muted: #9B9B93;
+  --border: #E4E4DF; --accent: #C84B31;
+}
+[data-theme="dark"] {
+  --bg: #0F0F0E; --bg-secondary: #1C1C1A; --text: #F0F0EE;
+  --text-secondary: #8A8A82; --text-muted: #5A5A54;
+  --border: #2A2A27; --accent: #E05A3A;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F0F0E; --bg-secondary: #1C1C1A; --text: #F0F0EE;
+    --text-secondary: #8A8A82; --text-muted: #5A5A54;
+    --border: #2A2A27; --accent: #E05A3A;
+  }
+}
 
-  <div class="update-bar">
-    Updated at <strong>6:00 PM ET</strong> &mdash; Next update in <strong id="countdown">57 min</strong>
-  </div>
+/* -- BASE -- */
+body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.2s, color 0.2s; }
 
-  <main>
-    
-    <section class="hero fade-in" data-cat-hero="all">
-      <a href="articles/all/iran-asserts-control-over-strait-of-hormuz-with-expanded-military-oversight-zone.html">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <span class="tag">World</span>
-            <h1>Iran asserts control over Strait of Hormuz with expanded military oversight zone</h1>
-            <p class="hero-summary">Iran has published a map claiming armed forces oversight across more than 22,000 square kilometers of the Strait of Hormuz, escalating its assertion of control over one of the world's most critical oil shipping routes.
+/* -- HEADER -- */
+header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); }
+.header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 28px; }
+.wordmark { font-family: "Fraunces", serif; font-size: 22px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; flex-shrink: 0; }
+.category-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.category-nav::-webkit-scrollbar { display: none; }
+.cat-btn { background: none; border: none; padding: 6px 13px; border-radius: 20px; font-family: "DM Sans", sans-serif; font-size: 13px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.cat-btn:hover { background: var(--bg-secondary); color: var(--text); }
+.cat-btn.active { background: var(--text); color: var(--bg); font-weight: 500; }
+.header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.theme-toggle { background: none; border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 14px; transition: all 0.15s; }
+.theme-toggle:hover { background: var(--bg-secondary); color: var(--text); }
+.support-btn { background: none; color: var(--accent); border: 1px solid var(--accent); padding: 7px 16px; border-radius: 20px; font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.support-btn:hover { background: var(--accent); color: white; }
 
-The strait is a narrow waterway between Iran and Oman through which approximately one-fifth of globa...</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          
-        </div>
-      </a>
-    </section>
-    <section class="hero" data-cat-hero="world" style="display:none">
-      <a href="articles/world/iran-asserts-control-over-strait-of-hormuz-with-expanded-military-oversight-zone.html">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <span class="tag">World</span>
-            <h1>Iran asserts control over Strait of Hormuz with expanded military oversight zone</h1>
-            <p class="hero-summary">Iran has published a map claiming armed forces oversight across more than 22,000 square kilometers of the Strait of Hormuz, escalating its assertion of control over one of the world's most critical oil shipping routes.
+/* -- UPDATE BAR -- */
+.update-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 7px 24px; text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.02em; }
+.update-bar strong { color: var(--accent); font-weight: 500; }
 
-The strait is a narrow waterway between Iran and Oman through which approximately one-fifth of globa...</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          
-        </div>
-      </a>
-    </section>
-    <section class="hero" data-cat-hero="us" style="display:none">
-      <a href="articles/us/republicans-delay-vote-on-ice-funding-bill-amid-internal-party-clash.html">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <span class="tag">U.S.</span>
-            <h1>Republicans delay vote on ICE funding bill amid internal party clash</h1>
-            <p class="hero-summary">House Republicans canceled a planned vote this week on a major funding bill for Immigration and Customs Enforcement after failing to unite their caucus behind the measure. The collapse exposes deepening divisions within the GOP over how aggressively to pursue the Trump administration's immigration enforcement agenda....</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          
-        </div>
-      </a>
-    </section>
-    <section class="hero" data-cat-hero="business" style="display:none">
-      <a href="articles/business/spacex-files-for-stock-market-debut-that-could-value-company-above-350-billion.html">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <span class="tag">Business</span>
-            <h1>SpaceX files for stock market debut that could value company above $350 billion</h1>
-            <p class="hero-summary">SpaceX has filed paperwork for an initial public offering that would make Elon Musk's rocket and satellite company publicly traded for the first time. The company will trade under the ticker symbol SPCX.
+/* -- MAIN -- */
+main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 
-The move comes as SpaceX has grown into the dominant force in commercial spaceflight, launching more rockets than a...</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          
-        </div>
-      </a>
-    </section>
-    <section class="hero" data-cat-hero="tech" style="display:none">
-      <a href="articles/tech/us-government-takes-2-billion-equity-stake-in-nine-quantum-computing-firms.html">
-        <div class="hero-inner hero-inner--split">
-          <div class="hero-content">
-            <span class="tag">Tech</span>
-            <h1>US government takes $2 billion equity stake in nine quantum computing firms</h1>
-            <p class="hero-summary">The United States government has invested $2 billion in exchange for equity positions in nine quantum computing companies, marking a significant federal intervention in the emerging technology sector. The investment represents a direct ownership stake rather than traditional grant funding, giving taxpayers a potential...</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          <img class="hero-image" src="https://cdn.arstechnica.net/wp-content/uploads/2017/03/Screen-Shot-2017-03-31-at-1.37.22-PM-500x500.png" alt="US government takes $2 billion equity stake in nine quantum computing firms" loading="lazy">
-        </div>
-      </a>
-    </section>
-    <section class="hero" data-cat-hero="science" style="display:none">
-      <a href="articles/science/almost-all-of-englands-river-bathing-sites-unsafe-for-swimming.html">
-        <div class="hero-inner">
-          <div class="hero-content">
-            <span class="tag">Science</span>
-            <h1>Almost all of England's river bathing sites unsafe for swimming</h1>
-            <p class="hero-summary">Signs warning people not to swim are posted at 12 of England's 14 designated river bathing sites due to elevated bacteria levels linked to fecal contamination. The widespread pollution affects newly designated locations that were meant to provide safe inland swimming alternatives for the public.
+/* -- HERO -- */
+.hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; }
+.tag { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+.hero h1 { font-family: "Fraunces", serif; font-size: clamp(30px, 4.5vw, 52px); font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 16px; transition: color 0.15s; }
+.hero-summary { font-size: 16px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; }
+.hero-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.meta { font-size: 11px; color: var(--text-muted); letter-spacing: 0.03em; }
 
-The Environment Agency...</p>
-            <span class="meta">Today, 6:00 PM ET</span>
-          </div>
-          
-        </div>
-      </a>
-    </section>
+/* -- EXPAND / COLLAPSE -- */
+.expand-btn { background: none; border: none; color: var(--accent); font-family: "DM Sans", sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; padding: 0; transition: opacity 0.15s; }
+.expand-btn:hover { opacity: 0.7; }
+.collapse-btn { background: none; border: none; color: var(--text-muted); font-family: "DM Sans", sans-serif; font-size: 12px; cursor: pointer; padding: 12px 0 0; display: block; transition: color 0.15s; }
+.collapse-btn:hover { color: var(--text); }
+.article-expand { display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+.article-expand.open { display: block; }
 
-    <p class="section-label">Latest</p>
+/* Hero expanded body — two columns on desktop */
+.hero-expand-body { column-count: 2; column-gap: 48px; }
+.hero-expand-body p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 18px; break-inside: avoid; }
 
-    <div class="articles-grid" id="articlesGrid">
-      
-      <a class="article-card fade-in" href="articles/world/air-france-and-airbus-convicted-of-manslaughter-in-2009-crash-that-killed-228.html" data-cat="world">
-        <span class="card-tag">World</span>
-        <h2 class="card-headline">Air France and Airbus convicted of manslaughter in 2009 crash that killed 228</h2>
-        <p class="card-summary">A French court found both companies guilty over the disaster, marking a rare criminal conviction in aviation safety. The crash involved flight AF447 traveling from Rio de Janeiro to Paris.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/world/ebola-hospital-tents-burned-by-angry-crowd-in-democratic-republic-of-congo.html" data-cat="world">
-        <span class="card-tag">World</span>
-        <h2 class="card-headline">Ebola hospital tents burned by angry crowd in Democratic Republic of Congo</h2>
-        <p class="card-summary">Relatives and friends of a suspected Ebola victim set fire to medical facilities after being prevented from taking the body for burial. The incident highlights ongoing tensions between health authorities and communities during outbreak response efforts.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/world/israeli-backlash-grows-after-video-shows-minister-taunting-bound-gaza-flotilla-a.html" data-cat="world">
-        <span class="card-tag">World</span>
-        <h2 class="card-headline">Israeli backlash grows after video shows minister taunting bound Gaza flotilla activists</h2>
-        <p class="card-summary">Far-right Israeli minister was filmed mocking activists who were kneeling with hands tied behind their backs before being deported. The video has drawn widespread condemnation over treatment of the detained individuals.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/world/two-arrested-after-boys-found-abandoned-by-roadside-in-portugal.html" data-cat="world">
-        <span class="card-tag">World</span>
-        <h2 class="card-headline">Two arrested after boys found abandoned by roadside in Portugal</h2>
-        <p class="card-summary">Children were discovered carrying backpacks with food and water but no identification documents. A driver found them by the road and alerted authorities.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/world/mali-jihadists-burn-vehicles-to-enforce-blockade-before-eid-holiday.html" data-cat="world">
-        <span class="card-tag">World</span>
-        <h2 class="card-headline">Mali jihadists burn vehicles to enforce blockade before Eid holiday</h2>
-        <p class="card-summary">Dozens of vehicles were destroyed as armed groups maintain restrictions on movement and trade. The blockade has created shortages of fuel and food ahead of next week's Muslim celebration.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/us/palestinians-withdraw-un-candidacy-after-us-visa-threat.html" data-cat="us">
-        <span class="card-tag">U.S.</span>
-        <h2 class="card-headline">Palestinians withdraw U.N. candidacy after U.S. visa threat</h2>
-        <p class="card-summary">The Palestinian delegation to the United Nations dropped its bid for a senior U.N. position after the United States threatened to revoke visas for delegation members. The move represents a significant use of U.S. leverage to influence U.N. personnel decisions.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/us/trumps-proposed-arch-wins-final-design-approval.html" data-cat="us">
-        <span class="card-tag">U.S.</span>
-        <h2 class="card-headline">Trump's proposed arch wins final design approval</h2>
-        <p class="card-summary">The Commission of Fine Arts gave final approval to plans for a large arch proposed by President Trump, even though some visual elements remain incomplete. Trump stated Thursday he does not believe congressional approval is required for the project.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/us/planned-parenthood-to-offer-advance-abortion-pills-in-two-states.html" data-cat="us">
-        <span class="card-tag">U.S.</span>
-        <h2 class="card-headline">Planned Parenthood to offer advance abortion pills in two states</h2>
-        <p class="card-summary">Washington state and Hawaii residents can now obtain mifepristone and misoprostol from Planned Parenthood to keep at home for potential future use. The program allows people to have abortion medication on hand before they need it.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/us/atlantic-hurricane-season-forecast-shows-average-activity-but-high-risk.html" data-cat="us">
-        <span class="card-tag">U.S.</span>
-        <h2 class="card-headline">Atlantic hurricane season forecast shows average activity but high risk</h2>
-        <p class="card-summary">Forecasters predict 8 to 14 storms will form in the Atlantic basin during this year's hurricane season from June through November. Experts warn that the relatively normal numbers still represent serious danger, as even a single storm can cause catastrophic damage.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/us/spacex-starship-test-flight-draws-investor-attention-ahead-of-ipo.html" data-cat="us">
-        <span class="card-tag">U.S.</span>
-        <h2 class="card-headline">SpaceX Starship test flight draws investor attention ahead of IPO</h2>
-        <p class="card-summary">SpaceX is conducting a critical test of its Starship rocket as the company prepares for a highly anticipated initial public offering that could value it at over a trillion dollars. The outcome of the launch will be closely watched by potential investors.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/business/walmart-warns-shoppers-cutting-spending-as-petrol-prices-rise.html" data-cat="business">
-        <span class="card-tag">Business</span>
-        <h2 class="card-headline">Walmart warns shoppers cutting spending as petrol prices rise</h2>
-        <p class="card-summary">The retail giant said it expects customers to reduce purchases in coming months due to higher fuel costs. The warning signals broader pressure on consumer spending as pump prices climb.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/business/uk-signs-37-billion-trade-deal-with-gulf-states.html" data-cat="business">
-        <span class="card-tag">Business</span>
-        <h2 class="card-headline">UK signs £3.7 billion trade deal with Gulf states</h2>
-        <p class="card-summary">The agreement with six Gulf nations will remove an estimated £580 million in tariffs from British exports. Rights groups have criticized the deal over human rights concerns in the region.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/business/meta-settles-social-media-addiction-lawsuit-with-school-district.html" data-cat="business">
-        <span class="card-tag">Business</span>
-        <h2 class="card-headline">Meta settles social media addiction lawsuit with school district</h2>
-        <p class="card-summary">The settlement resolves claims from a U.S. school district ahead of a trial that was set to be a test case. About 1,200 other school districts have filed similar lawsuits against the company.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/business/nvidia-earnings-fail-to-impress-despite-record-results.html" data-cat="business">
-        <span class="card-tag">Business</span>
-        <h2 class="card-headline">Nvidia earnings fail to impress despite record results</h2>
-        <p class="card-summary">The chip maker reported strong quarterly results but shares fell in after-hours trading. Investors are questioning whether the company can maintain its growth rate amid increasing competition.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/business/uk-to-cut-vat-on-theme-parks-and-childrens-meals-this-summer.html" data-cat="business">
-        <span class="card-tag">Business</span>
-        <h2 class="card-headline">UK to cut VAT on theme parks and children's meals this summer</h2>
-        <p class="card-summary">Chancellor Rachel Reeves announced the tax reduction for some attractions as part of cost-of-living relief measures. The cuts are aimed at making family activities more affordable during summer months.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/tech/trump-administration-redirects-ebola-exposed-americans-to-berlin-and-prague.html" data-cat="tech">
-        <span class="card-tag">Tech</span>
-        <h2 class="card-headline">Trump administration redirects Ebola-exposed Americans to Berlin and Prague</h2>
-        <p class="card-summary">American citizens exposed to Ebola were not allowed to return to the United States and were instead sent to Germany and the Czech Republic for monitoring. Officials denied refusing entry but did not explain why the Americans could not come home.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/tech/international-space-station-leaking-again-reinforcing-2030-retirement-timeline.html" data-cat="tech">
-        <span class="card-tag">Tech</span>
-        <h2 class="card-headline">International Space Station leaking again, reinforcing 2030 retirement timeline</h2>
-        <p class="card-summary">The ISS has developed new leaks, the latest in a series of structural problems affecting the aging orbital laboratory. Officials say the situation supports the current plan to decommission the station by 2030.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/tech/spacex-opens-its-books-for-the-first-time-claims-largest-market-opportunity-in-h.html" data-cat="tech">
-        <span class="card-tag">Tech</span>
-        <h2 class="card-headline">SpaceX opens its books for the first time, claims largest market opportunity in history</h2>
-        <p class="card-summary">The famously secretive company has shared financial data publicly for the first time. SpaceX stated it believes it has identified the largest total addressable market in human history, though details were not specified.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/tech/att-sues-california-to-shut-down-old-copper-phone-network.html" data-cat="tech">
-        <span class="card-tag">Tech</span>
-        <h2 class="card-headline">AT&T sues California to shut down old copper phone network</h2>
-        <p class="card-summary">AT&T is asking federal courts and the FCC to override California regulations that require maintaining traditional landline phone infrastructure. The company wants permission to fully transition away from copper wire networks.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/tech/james-webb-space-telescope-maps-weather-patterns-on-distant-gas-giant.html" data-cat="tech">
-        <span class="card-tag">Tech</span>
-        <h2 class="card-headline">James Webb Space Telescope maps weather patterns on distant gas giant</h2>
-        <p class="card-summary">Astronomers used JWST to create weather maps of a hot Jupiter planet 700 light years away. The observations revealed differences that could affect how scientists study planetary atmospheres across the galaxy.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/science/alaska-megatsunami-confirmed-as-second-largest-ever-recorded.html" data-cat="science">
-        <span class="card-tag">Science</span>
-        <h2 class="card-headline">Alaska megatsunami confirmed as second largest ever recorded</h2>
-        <p class="card-summary">New research has verified that a massive wave in an Alaska fjord ranks as the second largest megatsunami on record. Scientists link the event to glacier melt driven by climate change, which is increasing the risk of landslides that can generate giant waves.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/science/hurricanes-and-typhoons-intensifying-as-world-warms.html" data-cat="science">
-        <span class="card-tag">Science</span>
-        <h2 class="card-headline">Hurricanes and typhoons intensifying as world warms</h2>
-        <p class="card-summary">Tropical storms form when warm ocean water evaporates and creates rotating systems of thunderstorms. Climate change is making these storms more intense by raising ocean temperatures and increasing the amount of moisture in the atmosphere.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/science/uk-government-told-to-set-maximum-working-temperature.html" data-cat="science">
-        <span class="card-tag">Science</span>
-        <h2 class="card-headline">UK government told to set maximum working temperature</h2>
-        <p class="card-summary">The climate watchdog says successive governments have failed to prepare Britain for extreme heat and recommends establishing legal limits on workplace temperatures. Current regulations only set minimum temperatures for indoor work, not maximum limits.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/science/white-tailed-eagles-to-return-to-exmoor-despite-farmer-concerns.html" data-cat="science">
-        <span class="card-tag">Science</span>
-        <h2 class="card-headline">White-tailed eagles to return to Exmoor despite farmer concerns</h2>
-        <p class="card-summary">Britain's largest bird of prey will be reintroduced to Exmoor in a conservation project aimed at restoring the species to its historic range. Some farmers have raised concerns about potential threats to livestock from the eagles, which have wingspans up to eight feet.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-      <a class="article-card fade-in" href="articles/science/cambridge-science-park-submits-redevelopment-plans.html" data-cat="science">
-        <span class="card-tag">Science</span>
-        <h2 class="card-headline">Cambridge Science Park submits redevelopment plans</h2>
-        <p class="card-summary">Europe's oldest science park has filed plans for major expansion that could create 20,000 jobs and add new public spaces. The redevelopment would modernize the 50-year-old facility while maintaining its role as a hub for technology and research companies.</p>
-        <span class="card-time">6:00 PM ET</span>
-      </a>
-    </div>
+/* Card expanded body — single column */
+.card-expand-body p { font-size: 14px; line-height: 1.75; color: var(--text-secondary); margin-bottom: 14px; }
 
-    <div class="support-box" id="support">
-      <div class="support-box-text">
-        <p>Plain is free to read. No ads. No agenda.</p>
-        <span>If it is worth something to you, a small contribution keeps it running.</span>
-      </div>
-      <button class="support-box-btn">Support Plain</button>
-    </div>
-  </main>
+/* -- SECTION LABEL -- */
+.section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; }
 
-  <footer>
-    <div class="footer-inner">
-      <span class="footer-wordmark">plain</span>
-      <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
-      <div class="footer-links">
-        <a href="#">About</a>
-        <a href="#support">Support</a>
-        <a href="#">Contact</a>
-      </div>
-    </div>
-  </footer>
+/* -- ARTICLE GRID -- */
+.articles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.article-card { background: var(--bg); padding: 24px 22px; color: inherit; display: block; transition: background 0.15s; }
+.article-card:hover { background: var(--bg-secondary); }
+.card-tag { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; display: block; }
+.card-headline { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; line-height: 1.3; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text); }
+.card-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 14px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-time { font-size: 11px; color: var(--text-muted); letter-spacing: 0.02em; }
 
-  <script src="main.js"></script>
-</body>
-</html>
+/* -- SUPPORT BOX -- */
+.support-box { margin-top: 48px; border: 1px solid var(--border); border-radius: 10px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: var(--bg-secondary); }
+.support-box-text p { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
+.support-box-text span { font-size: 13px; color: var(--text-secondary); }
+.support-box-btn { background: var(--accent); color: white; border: none; padding: 11px 24px; border-radius: 24px; font-family: "DM Sans", sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; flex-shrink: 0; }
+.support-box-btn:hover { opacity: 0.85; }
+
+/* -- FOOTER -- */
+footer { border-top: 1px solid var(--border); padding: 28px 24px; margin-top: 60px; }
+.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.footer-wordmark { font-family: "Fraunces", serif; font-size: 17px; color: var(--accent); font-weight: 600; }
+.footer-tagline { font-size: 13px; color: var(--text-muted); }
+.footer-links { display: flex; gap: 20px; }
+.footer-links a { font-size: 12px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+.footer-links a:hover { color: var(--text); }
+
+/* -- ANIMATIONS -- */
+.fade-in { opacity: 0; transform: translateY(10px); animation: fadeUp 0.45s ease forwards; }
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.hero.fade-in              { animation-delay: 0.05s; }
+.article-card:nth-child(1) { animation-delay: 0.10s; }
+.article-card:nth-child(2) { animation-delay: 0.15s; }
+.article-card:nth-child(3) { animation-delay: 0.20s; }
+.article-card:nth-child(4) { animation-delay: 0.25s; }
+.article-card:nth-child(5) { animation-delay: 0.30s; }
+.article-card:nth-child(6) { animation-delay: 0.35s; }
+
+/* -- RESPONSIVE -- */
+@media (max-width: 900px) { .articles-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 680px) {
+  .support-box { flex-direction: column; align-items: flex-start; }
+  .hero-expand-body { column-count: 1; }
+}
+@media (max-width: 580px) {
+  .articles-grid { grid-template-columns: 1fr; }
+  .support-btn { display: none; }
+  .header-inner { gap: 16px; }
+}
