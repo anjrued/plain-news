@@ -17,6 +17,7 @@ CATEGORIES = {
     "world": {
         "label": "World",
         "feeds": [
+            "https://apnews.com/apf-intlnews/rss",
             "https://feeds.bbci.co.uk/news/world/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
         ],
@@ -24,6 +25,7 @@ CATEGORIES = {
     "us": {
         "label": "U.S.",
         "feeds": [
+            "https://apnews.com/apf-us-news/rss",
             "https://feeds.npr.org/1001/rss.xml",
             "https://feeds.bbci.co.uk/news/rss.xml",
         ],
@@ -31,6 +33,7 @@ CATEGORIES = {
     "business": {
         "label": "Business",
         "feeds": [
+            "https://apnews.com/apf-business/rss",
             "https://feeds.bbci.co.uk/news/business/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
         ],
@@ -45,8 +48,17 @@ CATEGORIES = {
     "science": {
         "label": "Science",
         "feeds": [
+            "https://apnews.com/apf-sciencehealth/rss",
             "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
             "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
+        ],
+    },
+    "sports": {
+        "label": "Sports",
+        "feeds": [
+            "https://apnews.com/apf-sports/rss",
+            "https://www.espn.com/espn/rss/news",
+            "https://feeds.bbci.co.uk/sport/rss.xml",
         ],
     },
 }
@@ -249,6 +261,7 @@ def render_index(all_categories):
         <button class="cat-btn" data-cat="business">Business</button>
         <button class="cat-btn" data-cat="tech">Tech</button>
         <button class="cat-btn" data-cat="science">Science</button>
+        <button class="cat-btn" data-cat="sports">Sports</button>
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
