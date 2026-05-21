@@ -274,7 +274,7 @@ def render_index(all_categories):
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
-        <button class="support-btn" onclick="document.getElementById('support').scrollIntoView({{behavior:'smooth'}})">Support Plain</button>
+        <button class="support-btn" onclick="window.open('https://buymeacoffee.com/andrewdobrow','_blank')">Support Plain</button>
       </div>
     </div>
   </header>
@@ -297,7 +297,7 @@ def render_index(all_categories):
         <p>Plain is free to read. No ads. No agenda.</p>
         <span>If it is worth something to you, a small contribution keeps it running.</span>
       </div>
-      <button class="support-box-btn">Support Plain</button>
+      <button class="support-box-btn" onclick="window.open('https://buymeacoffee.com/andrewdobrow','_blank')">Support Plain &#9829;</button>
     </div>
   </main>
 
