@@ -42,6 +42,7 @@ CATEGORIES = {
         "label": "Tech",
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en",
+            "https://www.theverge.com/rss/index.xml",
             "https://feeds.arstechnica.com/arstechnica/index",
             "https://techcrunch.com/feed/",
         ],
@@ -60,6 +61,15 @@ CATEGORIES = {
             "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en-US&gl=US&ceid=US:en",
             "https://www.espn.com/espn/rss/news",
             "https://feeds.bbci.co.uk/sport/rss.xml",
+        ],
+    },
+    "entertainment": {
+        "label": "Entertainment",
+        "feeds": [
+            "https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=en-US&gl=US&ceid=US:en",
+            "https://variety.com/feed/",
+            "https://www.rollingstone.com/feed/",
+            "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
         ],
     },
 }
@@ -95,6 +105,10 @@ IMAGE_BANK_FEEDS = [
     # Tech
     "https://feeds.arstechnica.com/arstechnica/index",
     "https://techcrunch.com/feed/",
+    "https://www.theverge.com/rss/index.xml",
+    # Entertainment
+    "https://variety.com/feed/",
+    "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
     # Yahoo News (broad aggregator with images)
     "https://news.yahoo.com/rss",
 ]
@@ -669,6 +683,7 @@ def render_index(all_categories):
         <button class="cat-btn" data-cat="tech">Tech</button>
         <button class="cat-btn" data-cat="science">Science</button>
         <button class="cat-btn" data-cat="sports">Sports</button>
+        <button class="cat-btn" data-cat="entertainment">Entertainment</button>
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
