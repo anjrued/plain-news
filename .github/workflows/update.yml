@@ -1,9 +1,7 @@
 name: Update News
 
 on:
-  schedule:
-    - cron: '0 * * * *'   # top of every hour
-  workflow_dispatch:        # allow manual trigger from GitHub UI
+  workflow_dispatch:        # Triggered by cron-job.org every hour
 
 jobs:
   update:
@@ -21,7 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser anthropic requests trafilatura pytz
+        run: pip install feedparser anthropic requests trafilatura
 
       - name: Generate news
         run: python scripts/generate.py
