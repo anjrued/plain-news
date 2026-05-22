@@ -127,6 +127,13 @@ def extract_image(entry):
     return ""
 
 
+def upscale_image_url(url):
+    """Upscale BBC CDN images by replacing size param with 1024."""
+    if not url or "ichef.bbci.co.uk" not in url:
+        return url
+    return re.sub(r"/\d{2,3}/", "/1024/", url, count=1)
+
+
 def build_image_bank():
     """Fetch images from RSS feeds that reliably include them (BBC, ESPN, TechCrunch)."""
     bank = []
@@ -155,7 +162,7 @@ def match_image(headline, image_bank):
         overlap = len(hw & tokens(entry["title"]))
         if overlap > best_score and overlap >= 2:
             best_score = overlap
-            best_img   = entry["image_url"]
+            best_img   = upscale_image_url(entry["image_url"])
     return best_img
 
 
@@ -537,8 +544,7 @@ def main():
             data["hero"]["image_url"] = img
 
             for card in data["cards"]:
-                card_match = find_image(card["headline"], headlines)
-                card["image_url"] = card_match["image_url"] or match_image(card["headline"], image_bank)
+                card["image_url"] = ""  # Cards text-only for consistency
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
