@@ -114,24 +114,32 @@ def extract_image(entry):
     return ""
 
 
-def fetch_og_image(url, timeout=5):
-    """Fetch og:image from article URL. Used for hero images when RSS has none."""
+def fetch_og_image(url, timeout=6):
+    """Fetch og:image from article URL using requests."""
     if not url:
         return ""
     try:
-        import urllib.request as _ur
-        req = _ur.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; PlainNews/1.0)"})
-        with _ur.urlopen(req, timeout=timeout) as r:
-            html = r.read(15000).decode("utf-8", errors="ignore")
-        for pattern in [
-            r'<meta[^>]+property=["\'\']og:image["\'\'][^>]+content=["\'\']([^\"\'\']+)["\'\']>',
-            r'<meta[^>]+content=["\'\']([^\"\'\']+)["\'\'][^>]+property=["\'\']og:image["\'\']>',
-        ]:
-            m = re.search(pattern, html)
-            if m and m.group(1).startswith("http"):
-                return m.group(1)
-    except Exception:
-        pass
+        import requests as _req
+        hdrs = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        resp = _req.get(url, headers=hdrs, timeout=timeout, stream=True)
+        raw = b""
+        for chunk in resp.iter_content(4096):
+            raw += chunk
+            if len(raw) >= 20000:
+                break
+        html = raw.decode("utf-8", errors="ignore")
+        # Match og:image in both attribute orderings
+        dq = chr(34)
+        sq = chr(39)
+        q = "[" + dq + sq + "]"
+        p1 = r"<meta[^>]+property=" + q + "og:image" + q + r"[^>]+content=" + q + r"([^" + dq + sq + r"]+)" + q
+        p2 = r"<meta[^>]+content=" + q + r"([^" + dq + sq + r"]+)" + q + r"[^>]+property=" + q + "og:image" + q
+        for pat in (p1, p2):
+            m = re.search(pat, html, re.IGNORECASE)
+            if m and m.group(1).strip().startswith("http"):
+                return m.group(1).strip()
+    except Exception as e:
+        print(f"  og:image failed ({str(url)[:60]}): {e}")
     return ""
 
 
@@ -146,6 +154,7 @@ def find_image(headline, entries):
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
+    """Pull headlines from feeds in priority order. First feed fills most slots."""
     seen, entries = set(), []
     for url in feeds:
         try:
@@ -161,9 +170,13 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                     "link":      entry.get("link", ""),
                     "image_url": extract_image(entry),
                 })
+                if len(entries) >= limit:
+                    break
         except Exception as e:
-            print(f"  Feed error ({url}): {e}")
-    return entries[:limit]
+            print(f"  Feed error ({url[:60]}): {e}")
+        if len(entries) >= limit:
+            break
+    return entries
 
 
 # -- CLAUDE EDITORIAL ENGINE --
@@ -288,15 +301,33 @@ def render_index(all_categories):
     for cat in all_categories:
         heroes_html += hero_section(cat["category_key"], cat["category_label"], cat["hero"], visible=False)
 
-    # -- Card grid -- collected across all categories, sorted by urgency --
+    # -- Card grid -- category heroes + regular cards, sorted by urgency --
     all_cards = []
+
+    # Add category hero stories into the pool — they deserve to rank with everything
+    for cat in all_categories:
+        hero = cat["hero"]
+        all_cards.append({
+            "headline":      hero["headline"],
+            "teaser":        hero["body"][:220].rstrip() + "...",
+            "body":          hero["body"],
+            "urgency_score": hero.get("urgency_score", 0),
+            "image_url":     hero.get("image_url", ""),
+            "cat_key":       cat["category_key"],
+            "cat_label":     cat["category_label"],
+            "is_hero":       True,
+        })
+
+    # Add regular cards
     for cat in all_categories:
         for card in cat["cards"]:
             all_cards.append({
                 **card,
                 "cat_key":   cat["category_key"],
                 "cat_label": cat["category_label"],
+                "is_hero":   False,
             })
+
     all_cards.sort(key=lambda c: c.get("urgency_score", 0), reverse=True)
 
     cards_html = ""
@@ -304,12 +335,14 @@ def render_index(all_categories):
         teaser = card.get("teaser", card.get("summary", ""))
         body   = card.get("body", card.get("summary", ""))
         card_paragraphs = make_paragraphs(body)
-        ck      = card["cat_key"]
-        cl      = card["cat_label"]
-        img_url = card.get("image_url", "")
-        img_tag = f'<img class="card-image" src="{img_url}" alt="" loading="lazy">' if img_url else ""
+        ck       = card["cat_key"]
+        cl       = card["cat_label"]
+        img_url  = card.get("image_url", "")
+        img_tag  = f'<img class="card-image" src="{img_url}" alt="" loading="lazy">' if img_url else ""
+        # Hero cards hide in their own category view — the hero section already shows them there
+        is_hero_attr = ' data-is-hero="true"' if card.get("is_hero") else ""
         cards_html += f"""
-      <div class="article-card fade-in" data-cat="{ck}">
+      <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}>
         {img_tag}
         <span class="card-tag">{cl}</span>
         <h2 class="card-headline">{card["headline"]}</h2>
