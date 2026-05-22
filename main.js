@@ -22,25 +22,33 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e =
 
 // -- EXPAND / COLLAPSE --
 function toggleExpand(btn) {
-  const expand = btn.closest(".hero, .article-card").querySelector(".article-expand");
-  const isOpen = expand.classList.contains("open");
+  const container = btn.closest(".hero, .article-card");
+  const expand    = container.querySelector(".article-expand");
+  const summary   = container.querySelector(".hero-summary, .card-summary");
+  const foot      = container.querySelector(".hero-foot, .card-foot");
+  const isOpen    = expand.classList.contains("open");
+
   if (isOpen) {
     expand.classList.remove("open");
-    btn.innerHTML = "Continue reading &darr;";
+    if (summary) summary.style.display = "";
+    if (foot)    foot.style.display    = "";
   } else {
     expand.classList.add("open");
-    btn.innerHTML = "Close &uarr;";
-    // Smooth scroll so expanded content is visible
+    if (summary) summary.style.display = "none";
+    if (foot)    foot.style.display    = "none";
     setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
   }
 }
 
 function collapseThis(collapseBtn) {
-  const parent = collapseBtn.closest(".hero, .article-card");
-  const expand = parent.querySelector(".article-expand");
-  const expandBtn = parent.querySelector(".expand-btn");
+  const container = collapseBtn.closest(".hero, .article-card");
+  const expand    = container.querySelector(".article-expand");
+  const summary   = container.querySelector(".hero-summary, .card-summary");
+  const foot      = container.querySelector(".hero-foot, .card-foot");
+
   expand.classList.remove("open");
-  if (expandBtn) expandBtn.innerHTML = "Continue reading &darr;";
+  if (summary) summary.style.display = "";
+  if (foot)    foot.style.display    = "";
 }
 
 // -- CATEGORY FILTER --
@@ -50,12 +58,10 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     btn.classList.add("active");
     const cat = btn.dataset.cat;
 
-    // Switch hero
     document.querySelectorAll("[data-cat-hero]").forEach(hero => {
       hero.style.display = hero.dataset.catHero === cat ? "block" : "none";
     });
 
-    // Filter cards
     document.querySelectorAll(".article-card").forEach(card => {
       card.style.display = (cat === "all" || card.dataset.cat === cat) ? "block" : "none";
     });
