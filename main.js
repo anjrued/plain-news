@@ -51,29 +51,6 @@ function collapseThis(collapseBtn) {
   if (foot)    foot.style.display    = "";
 }
 
-  if (isOpen) {
-    expand.classList.remove("open");
-    if (summary) summary.style.display = "";
-    if (foot)    foot.style.display    = "";
-  } else {
-    expand.classList.add("open");
-    if (summary) summary.style.display = "none";
-    if (foot)    foot.style.display    = "none";
-    setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
-  }
-}
-
-function collapseThis(collapseBtn) {
-  const container = collapseBtn.closest(".hero, .article-card");
-  const expand    = container.querySelector(".article-expand");
-  const summary   = container.querySelector(".hero-summary, .card-summary");
-  const foot      = container.querySelector(".hero-foot, .card-foot");
-
-  expand.classList.remove("open");
-  if (summary) summary.style.display = "";
-  if (foot)    foot.style.display    = "";
-}
-
 // -- CATEGORY FILTER --
 document.querySelectorAll(".cat-btn").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -86,12 +63,9 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     });
 
     document.querySelectorAll(".article-card").forEach(card => {
-      const matchesCat    = cat === "all" || card.dataset.cat === cat;
-      // In category view: hide hero cards for that category (shown in hero section already)
-      const isDupeInCat   = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
-      // In All view: hide the card that is also the All hero (shown in hero section already)
-      const isDupeAllHero = cat === "all" && card.dataset.allHero === "true";
-      card.style.display  = (matchesCat && !isDupeInCat && !isDupeAllHero) ? "block" : "none";
+      const matchesCat  = cat === "all" || card.dataset.cat === cat;
+      const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
+      card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
     });
   });
 });
