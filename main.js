@@ -1,103 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About - Plain</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <style>
-    .about-page { max-width: 680px; margin: 0 auto; padding: 60px 24px 100px; }
-    .about-page h2 { font-family: "Fraunces", serif; font-size: 28px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); margin: 48px 0 16px; }
-    .about-page h2:first-of-type { margin-top: 0; }
-    .about-page p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 16px; }
-    .about-page a { color: var(--accent); text-decoration: none; }
-    .about-page a:hover { text-decoration: underline; }
-    .about-lede { font-family: "Fraunces", serif; font-size: clamp(24px, 4vw, 38px); font-weight: 500; line-height: 1.2; letter-spacing: -0.02em; color: var(--text); margin-bottom: 40px; padding-bottom: 40px; border-bottom: 1px solid var(--border); }
-    .about-support { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 28px 32px; margin-top: 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
-    .about-support p { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; color: var(--text); margin: 0; letter-spacing: -0.01em; }
-    .about-support span { font-family: "DM Sans", sans-serif; font-size: 13px; color: var(--text-secondary); display: block; margin-top: 4px; font-weight: 400; }
-    .about-support-btn { background: var(--accent); color: white; border: none; padding: 11px 24px; border-radius: 24px; font-family: "DM Sans", sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; }
-    .about-support-btn:hover { opacity: 0.85; text-decoration: none; }
-    .how-it-works { list-style: none; padding: 0; margin: 0 0 16px; counter-reset: steps; }
-    .how-it-works li { counter-increment: steps; display: flex; gap: 16px; margin-bottom: 16px; font-size: 16px; line-height: 1.7; color: var(--text-secondary); }
-    .how-it-works li::before { content: counter(steps); font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; color: var(--accent); flex-shrink: 0; width: 24px; padding-top: 1px; }
-  </style>
-</head>
-<body>
+// -- THEME --
+const html   = document.documentElement;
+const toggle = document.getElementById("themeToggle");
 
-  <header>
-    <div class="header-inner">
-      <a href="/" class="wordmark">plain</a>
-      <nav class="category-nav">
-        <button class="cat-btn" onclick="window.location.href='/'">All</button>
-        <button class="cat-btn" onclick="window.location.href='/'">World</button>
-        <button class="cat-btn" onclick="window.location.href='/'">U.S.</button>
-        <button class="cat-btn" onclick="window.location.href='/'">Business</button>
-        <button class="cat-btn" onclick="window.location.href='/'">Tech</button>
-        <button class="cat-btn" onclick="window.location.href='/'">Science</button>
-        <button class="cat-btn" onclick="window.location.href='/'">Sports</button>
-      </nav>
-      <div class="header-actions">
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
-        <button class="support-btn" onclick="window.open('https://buymeacoffee.com/andrewdobrow','_blank')">Support Plain</button>
-      </div>
-    </div>
-  </header>
+function getSystemTheme() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function applyTheme(theme) {
+  html.setAttribute("data-theme", theme);
+  if (toggle) toggle.innerHTML = theme === "dark" ? "&#9728;" : "&#9790;";
+  localStorage.setItem("plain-theme", theme);
+}
+applyTheme(localStorage.getItem("plain-theme") || getSystemTheme());
+if (toggle) {
+  toggle.addEventListener("click", () => {
+    applyTheme(html.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
+  if (!localStorage.getItem("plain-theme")) applyTheme(e.matches ? "dark" : "light");
+});
 
-  <main>
-    <div class="about-page">
+// -- EXPAND / COLLAPSE --
+function toggleExpand(btn) {
+  const hero    = btn.closest(".hero, .article-card");
+  const expand  = hero.querySelector(".article-expand");
+  const summary = hero.querySelector(".hero-summary, .card-summary");
+  const foot    = hero.querySelector(".hero-foot, .card-foot");
+  const isOpen  = expand.classList.contains("open");
 
-      <p class="about-lede">News without the noise. No ads. No autoplay video. No agenda. Just what matters, updated every hour.</p>
+  if (isOpen) {
+    expand.classList.remove("open");
+    if (summary) summary.style.display = "";
+    if (foot)    foot.style.display    = "";
+  } else {
+    expand.classList.add("open");
+    if (summary) summary.style.display = "none";
+    if (foot)    foot.style.display    = "none";
+    setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  }
+}
 
-      <h2>What is Plain?</h2>
-      <p>Plain is a free news site built around one idea: reading the news should not feel like an assault. Most news sites today are cluttered with ads, autoplaying video, cookie popups, and headlines engineered to provoke rather than inform. People have started getting their news from social media not because social media is good at news, but because everything else got so bad.</p>
-      <p>Plain is the antidote. Clean design. No ads. No tracking. No noise. Just the most important stories of the hour, clearly written and easy to read.</p>
+function collapseThis(collapseBtn) {
+  const hero    = collapseBtn.closest(".hero, .article-card");
+  const expand  = hero.querySelector(".article-expand");
+  const summary = hero.querySelector(".hero-summary, .card-summary");
+  const foot    = hero.querySelector(".hero-foot, .card-foot");
 
-      <h2>How it works</h2>
-      <ol class="how-it-works">
-        <li>Every hour, Plain pulls the latest headlines from wire services and major news sources across six categories: World, U.S., Business, Tech, Science, and Sports.</li>
-        <li>An AI editorial engine reviews the headlines and selects the most important story in each category, ranked by urgency and consequence — not clicks or engagement.</li>
-        <li>The engine writes a clear, factual article for each top story, then ranks all stories globally so the most impactful news leads the front page regardless of category.</li>
-        <li>The site rebuilds and publishes. The whole process takes about two minutes.</li>
-      </ol>
-      <p>Plain is transparent about being AI-written. The goal is not to replace journalism — the underlying reporting comes from professional newsrooms around the world. Plain synthesizes and presents it without the noise.</p>
+  expand.classList.remove("open");
+  if (summary) summary.style.display = "";
+  if (foot)    foot.style.display    = "";
+}
 
-      <h2>Editorial priorities</h2>
-      <p>The AI engine ranks stories by three criteria, in order: <strong>urgency</strong> (what is actively unfolding right now), <strong>consequence</strong> (decisions or events that change something real for real people), and <strong>scope</strong> (how many people are meaningfully affected).</p>
-      <p>Plain explicitly avoids: sensationalism, outrage cycles, celebrity news, and conflict for its own sake. A major policy decision will always outrank a viral social media moment.</p>
+// -- CATEGORY FILTER --
+document.querySelectorAll(".cat-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    try {
+      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const cat = btn.dataset.cat;
 
-      <h2>Who built this?</h2>
-      <p>Plain was built by <a href="https://buymeacoffee.com/andrewdobrow" target="_blank">Andrew Dobrow</a>, a news reader who got tired of news sites that made him feel worse for visiting them. It runs on a small server and a modest API budget. There are no investors, no advertisers, and no algorithm optimizing for your attention.</p>
+      // Switch hero sections
+      document.querySelectorAll("[data-cat-hero]").forEach(hero => {
+        hero.style.display = hero.dataset.catHero === cat ? "block" : "none";
+      });
 
-      <h2>Is it really free?</h2>
-      <p>Yes. Plain costs real money to keep running. It is free to read because news should be accessible to everyone. If you find it useful, consider supporting it below. Every contribution helps keep it running and independent.</p>
+      // Filter article cards (skip support card)
+      document.querySelectorAll(".article-card").forEach(card => {
+        if (card.classList.contains("support-card")) return;
+        const matchesCat  = cat === "all" || card.dataset.cat === cat;
+        const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
+        card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
+      });
 
-      <div class="about-support">
-        <div>
-          <p>Plain is free to read. No ads. No agenda.</p>
-          <span>If it is worth something to you, a small contribution keeps it running.</span>
-        </div>
-        <a href="https://buymeacoffee.com/andrewdobrow" target="_blank" class="about-support-btn">Support Plain &#9829;</a>
-      </div>
+      // Reposition support card to 3rd visible slot
+      const grid        = document.getElementById("articlesGrid");
+      const supportCard = grid ? grid.querySelector(".support-card") : null;
+      if (supportCard && grid) {
+        const visible = Array.from(grid.querySelectorAll(".article-card:not(.support-card)"))
+          .filter(c => c.style.display !== "none");
+        const insertAfter = visible.length >= 2 ? visible[1] : visible[visible.length - 1];
+        if (insertAfter) insertAfter.insertAdjacentElement("afterend", supportCard);
+        supportCard.style.display = "block";
+      }
+    } catch(e) {
+      console.error("Category filter error:", e);
+    }
+  });
+});
 
-    </div>
-  </main>
-
-  <footer>
-    <div class="footer-inner">
-      <span class="footer-wordmark">plain</span>
-      <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
-      <div class="footer-links">
-        <a href="about.html">About</a>
-        <a href="/#support">Support</a>
-        <a href="#">Contact</a>
-      </div>
-    </div>
-  </footer>
-
-  <script src="main.js"></script>
-</body>
-</html>
+// -- COUNTDOWN --
+function updateCountdown() {
+  const now = new Date(), next = new Date(now);
+  next.setHours(now.getHours() + 1, 0, 0, 0);
+  const el = document.getElementById("countdown");
+  if (el) el.textContent = Math.floor((next - now) / 60000) + " min";
+}
+updateCountdown();
+setInterval(updateCountdown, 60000);
