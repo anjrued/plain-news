@@ -22,11 +22,11 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e =
 
 // -- EXPAND / COLLAPSE --
 function toggleExpand(btn) {
-  const container = btn.closest(".hero, .article-card");
-  const expand    = container.querySelector(".article-expand");
-  const summary   = container.querySelector(".hero-summary, .card-summary");
-  const foot      = container.querySelector(".hero-foot, .card-foot");
-  const isOpen    = expand.classList.contains("open");
+  const hero    = btn.closest(".hero, .article-card");
+  const expand  = hero.querySelector(".article-expand");
+  const summary = hero.querySelector(".hero-summary, .card-summary");
+  const foot    = hero.querySelector(".hero-foot, .card-foot");
+  const isOpen  = expand.classList.contains("open");
 
   if (isOpen) {
     expand.classList.remove("open");
@@ -41,10 +41,10 @@ function toggleExpand(btn) {
 }
 
 function collapseThis(collapseBtn) {
-  const container = collapseBtn.closest(".hero, .article-card");
-  const expand    = container.querySelector(".article-expand");
-  const summary   = container.querySelector(".hero-summary, .card-summary");
-  const foot      = container.querySelector(".hero-foot, .card-foot");
+  const hero    = collapseBtn.closest(".hero, .article-card");
+  const expand  = hero.querySelector(".article-expand");
+  const summary = hero.querySelector(".hero-summary, .card-summary");
+  const foot    = hero.querySelector(".hero-foot, .card-foot");
 
   expand.classList.remove("open");
   if (summary) summary.style.display = "";
@@ -63,9 +63,10 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     });
 
     document.querySelectorAll(".article-card").forEach(card => {
-      const matchesCat  = cat === "all" || card.dataset.cat === cat;
+      const isSupport  = card.dataset.supportCard === "true";
+      const matchesCat = cat === "all" || card.dataset.cat === cat;
       const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
-      card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
+      card.style.display = (isSupport || (matchesCat && !isDupeInCat)) ? "block" : "none";
     });
   });
 });
