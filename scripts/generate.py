@@ -520,7 +520,7 @@ def render_index(all_categories):
       <div class="article-card support-card fade-in" data-cat="all">
         <span class="card-tag support-card-tag">Plain</span>
         <h2 class="card-headline support-card-headline">Plain is free. Help keep it that way.</h2>
-        <p class="card-summary">No ads. No paywalls. No agenda. Plain costs about $3 a day to run entirely on reader support. If it's worth something to you, consider buying us a coffee.</p>
+        <p class="card-summary">No ads. No paywalls. No agenda. Plain runs entirely on reader support. If it's worth something to you, consider buying us a coffee.</p>
         <div class="card-foot">
           <a href="https://buymeacoffee.com/andrewdobrow" target="_blank" class="support-card-btn">Support Plain &#9829;</a>
         </div>
@@ -608,7 +608,7 @@ def render_index(all_categories):
     <div class="support-box" id="support">
       <div class="support-box-text">
         <p>Plain runs on reader support.</p>
-        <span>No ads. No investors. No agenda. Just $3 a day in running costs and the belief that clean news should be free. If Plain is part of your day, consider buying us a coffee.</span>
+        <span>No ads. No investors. No agenda. Just a belief that clean news should be free and a real cost to keep it that way. If Plain is part of your day, consider buying us a coffee.</span>
       </div>
       <button class="support-box-btn" onclick="window.open('https://buymeacoffee.com/andrewdobrow','_blank')">Support Plain &#9829;</button>
     </div>
