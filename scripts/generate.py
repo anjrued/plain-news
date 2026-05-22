@@ -547,7 +547,7 @@ def render_index(all_categories):
       <span class="footer-wordmark">plain</span>
       <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
       <div class="footer-links">
-        <a href="#">About</a>
+        <a href="about.html">About</a>
         <a href="#support">Support</a>
         <a href="#">Contact</a>
       </div>
