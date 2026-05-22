@@ -46,15 +46,14 @@ main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 
 /* -- HERO -- */
 .hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; }
-.hero-inner { display: block; }
-.hero-inner--split { display: block; overflow: hidden; }
+.hero-inner { display: block; overflow: hidden; }
 .hero-image {
   float: right;
-  width: 420px;
-  height: 300px;
+  width: 400px;
+  height: 280px;
   object-fit: cover;
   border-radius: 8px;
-  margin: 4px 0 20px 36px;
+  margin: 6px 0 20px 32px;
   display: block;
 }
 .tag { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
@@ -121,7 +120,7 @@ footer { border-top: 1px solid var(--border); padding: 28px 24px; margin-top: 60
 /* -- RESPONSIVE -- */
 @media (max-width: 900px) {
   .articles-grid { grid-template-columns: repeat(2, 1fr); }
-  .hero-image { width: 100%; float: none; margin: 0 0 20px 0; height: 240px; }
+  .hero-image { float: none; width: 100%; height: 220px; margin: 0 0 20px 0; }
 }
 @media (max-width: 680px) {
   .support-box { flex-direction: column; align-items: flex-start; }
