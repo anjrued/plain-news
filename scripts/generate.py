@@ -217,6 +217,19 @@ Editorial priorities (in order):
 2. CONSEQUENCE - decisions or events that change something real.
 3. SCOPE - how many people are meaningfully affected.
 
+CRITICAL ACCURACY RULES - never violate these:
+- Only write details explicitly stated in the provided headlines and summaries.
+- Never speculate, infer, or invent causes, circumstances, or details not in the source.
+- If a cause of death, motive, or detail is unconfirmed, do not include it. Write "details have not been confirmed" or omit it.
+- Never fabricate quotes, statistics, names, or events not present in the source material.
+- If a story is developing and details are limited, write only what is known and note that reporting is ongoing.
+
+TEMPORAL ACCURACY RULES - always apply these:
+- Pay close attention to when events occurred. Use past tense for events that have already happened.
+- If a headline provides new context or details about a previous event (e.g. "details emerge about yesterday's death"), frame the article as an update: "New details have emerged about..." or "Following [person]'s death on [day]..." — not as a new event happening now.
+- If a story references something that happened "yesterday" or on a prior date, make that timing clear in the article. Never write about a past event as if it is currently unfolding.
+- The article should reflect the current state of the story, not just the most dramatic moment.
+
 Avoid: sensationalism, outrage bait, celebrity news.
 Write in plain direct English. No jargon. No padding. No em dashes."""
 
@@ -235,8 +248,9 @@ def generate_category_content(category_key, category_label, headlines):
 
 Tasks:
 1. Identify the single most important/urgent story.
-2. Write a 420-480 word factual article for the hero position.
-3. For the next {CARDS_PER_CATEGORY} most important stories write:
+2. Write a headline that accurately reflects the current state of the story. If the story is an update to a previous event, the headline should reflect that (e.g. "New Details Emerge in Kyle Busch Death" or "Kyle Busch Found Unresponsive Before Death"). Never write a headline that makes a past event sound like it is happening now.
+3. Write a 420-480 word factual article for the hero position.
+4. For the next {CARDS_PER_CATEGORY} most important stories write:
    - teaser: one sentence card preview
    - body: two short paragraphs (~120 words) expanding on the story
    - urgency_score: integer 1-10 using the same criteria as the hero
@@ -244,7 +258,7 @@ Tasks:
 Return ONLY valid JSON:
 {{
   "hero": {{
-    "headline": "...",
+    "headline": "accurate temporally-framed headline",
     "body": "full article text with paragraph breaks",
     "urgency_score": <1-10>,
     "published": "copy the [pub:...] string from the chosen headline exactly, including the date"
@@ -501,8 +515,21 @@ def render_index(all_categories):
     all_cards.sort(key=lambda c: c.get("urgency_score", 0), reverse=True)  # Pre-sort
     all_cards = global_rank(all_cards)  # Final true global ranking
 
+    # Static support card injected at position 3
+    support_card = """
+      <div class="article-card support-card fade-in" data-cat="all">
+        <span class="card-tag support-card-tag">Plain</span>
+        <h2 class="card-headline support-card-headline">Plain is free. Help keep it that way.</h2>
+        <p class="card-summary">No ads. No paywalls. No agenda. Plain costs about $3 a day to run entirely on reader support. If it's worth something to you, consider buying us a coffee.</p>
+        <div class="card-foot">
+          <a href="https://buymeacoffee.com/andrewdobrow" target="_blank" class="support-card-btn">Support Plain &#9829;</a>
+        </div>
+      </div>"""
+
     cards_html = ""
-    for card in all_cards:
+    for i, card in enumerate(all_cards):
+        if i == 2:
+            cards_html += support_card
         teaser = card.get("teaser", card.get("summary", ""))
         body   = card.get("body", card.get("summary", ""))
         card_paragraphs = make_paragraphs(body)
@@ -580,8 +607,8 @@ def render_index(all_categories):
 
     <div class="support-box" id="support">
       <div class="support-box-text">
-        <p>Plain is free to read. No ads. No agenda.</p>
-        <span>If it is worth something to you, a small contribution keeps it running.</span>
+        <p>Plain runs on reader support.</p>
+        <span>No ads. No investors. No agenda. Just $3 a day in running costs and the belief that clean news should be free. If Plain is part of your day, consider buying us a coffee.</span>
       </div>
       <button class="support-box-btn" onclick="window.open('https://buymeacoffee.com/andrewdobrow','_blank')">Support Plain &#9829;</button>
     </div>
