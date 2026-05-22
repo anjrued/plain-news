@@ -310,7 +310,7 @@ def generate_category_content(category_key, category_label, headlines):
 Tasks:
 1. Identify the single most important/urgent story.
 2. Write a headline that accurately reflects the current state of the story. If the story is an update to a previous event, the headline should reflect that (e.g. "New Details Emerge in Kyle Busch Death" or "Kyle Busch Found Unresponsive Before Death"). Never write a headline that makes a past event sound like it is happening now.
-3. Write a 420-480 word factual article for the hero position. Write ONLY what is explicitly stated in the headline and summary provided. If details are limited, write a shorter accurate article rather than padding with speculation. Do not add context, background, or details that are not in the source material.
+3. Write a factual article for the hero position using ONLY what is explicitly stated in the provided headlines and summaries. Do not pad, speculate, or add context not in the source. Write as much as the source material supports — if details are limited, a short accurate article is better than a long padded one.
 4. For the next {CARDS_PER_CATEGORY} most important stories write:
    - teaser: one sentence card preview
    - body: two short paragraphs (~120 words) expanding on the story
@@ -416,8 +416,11 @@ def fetch_article_text(url, max_words=900):
             messages=[{
                 "role": "user",
                 "content": (
-                    f"Fetch this URL and return ONLY the article body text, "
-                    f"no headlines, no navigation, no ads, just the article content: {url}"
+                    f"I need the full text of a news article. URL: {url}\n\n"
+                    "This may be a Google News URL. Please:\n"
+                    "1. Fetch this URL\n"
+                    "2. If it is a Google News page, find and fetch the actual publisher article URL (AP, Reuters, BBC, ESPN, etc.)\n"
+                    "3. Return ONLY the full article body text. No navigation, no ads, no related articles."
                 )
             }],
             extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
@@ -478,8 +481,8 @@ def enhance_hero_article(hero, full_text):
         "Rewrite your article using ONLY facts, quotes, and details explicitly present in the source article above. "
         "Do not add anything not in the source. Do not speculate or infer. "
         "If the source confirms a specific detail (cause of death, reason for resignation, etc.) include it. "
-        "If a detail is not in the source, omit it entirely — do not mention its absence or say it is unconfirmed. "
-        "Keep it 420-480 words. Plain direct English. No em dashes. No jargon."
+        "If a detail is not in the source, omit it entirely — do not mention its absence. "
+        "Write as much as the source supports. A shorter accurate article is better than a padded one. No em dashes."
     )
     try:
         resp = client.messages.create(
