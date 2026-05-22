@@ -114,28 +114,60 @@ def extract_image(entry):
     return ""
 
 
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
+
+def resolve_url(url, timeout=4):
+    """Follow Google News redirect to get the actual publisher article URL."""
+    if not url or "google.com" not in url:
+        return url
+    try:
+        import requests as _req
+        # HEAD request follows redirects cheaply
+        resp = _req.head(url, headers=BROWSER_HEADERS, allow_redirects=True, timeout=timeout)
+        if "google.com" not in resp.url:
+            return resp.url
+        # Still on Google - parse the page for og:url
+        resp2 = _req.get(url, headers=BROWSER_HEADERS, timeout=timeout, stream=True)
+        html = b""
+        for chunk in resp2.iter_content(4096):
+            html += chunk
+            if len(html) >= 15000: break
+        html = html.decode("utf-8", errors="ignore")
+        dq, sq = chr(34), chr(39)
+        q  = "[" + dq + sq + "]"
+        nq = "[^" + dq + sq + "]"
+        pat = re.compile("<meta[^>]+property=" + q + "og:url" + q + "[^>]+content=" + q + "(" + nq + "+)" + q, re.I)
+        m = pat.search(html)
+        if m and "google.com" not in m.group(1):
+            return m.group(1).strip()
+    except Exception:
+        pass
+    return url
+
+
 def fetch_og_image(url, timeout=6):
-    """Fetch og:image from article URL using requests."""
+    """Fetch og:image from article URL, resolving Google News redirects first."""
     if not url:
         return ""
     try:
         import requests as _req
-        hdrs = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-        resp = _req.get(url, headers=hdrs, timeout=timeout, stream=True)
-        raw = b""
+        actual = resolve_url(url, timeout=4)
+        resp = _req.get(actual, headers=BROWSER_HEADERS, timeout=timeout, stream=True)
+        html = b""
         for chunk in resp.iter_content(4096):
-            raw += chunk
-            if len(raw) >= 20000:
-                break
-        html = raw.decode("utf-8", errors="ignore")
-        # Match og:image in both attribute orderings
-        dq = chr(34)
-        sq = chr(39)
-        q = "[" + dq + sq + "]"
-        p1 = r"<meta[^>]+property=" + q + "og:image" + q + r"[^>]+content=" + q + r"([^" + dq + sq + r"]+)" + q
-        p2 = r"<meta[^>]+content=" + q + r"([^" + dq + sq + r"]+)" + q + r"[^>]+property=" + q + "og:image" + q
+            html += chunk
+            if len(html) >= 20000: break
+        html = html.decode("utf-8", errors="ignore")
+        dq, sq = chr(34), chr(39)
+        q  = "[" + dq + sq + "]"
+        nq = "[^" + dq + sq + "]"
+        p1 = re.compile("<meta[^>]+property=" + q + "og:image" + q + "[^>]+content=" + q + "(" + nq + "+)" + q, re.I)
+        p2 = re.compile("<meta[^>]+content=" + q + "(" + nq + "+)" + q + "[^>]+property=" + q + "og:image" + q, re.I)
         for pat in (p1, p2):
-            m = re.search(pat, html, re.IGNORECASE)
+            m = pat.search(html)
             if m and m.group(1).strip().startswith("http"):
                 return m.group(1).strip()
     except Exception as e:
@@ -264,6 +296,52 @@ def make_paragraphs(text):
     )
 
 
+def global_rank(all_cards):
+    """Final global ranking — sends all headlines to Claude for true cross-category ordering."""
+    if not all_cards:
+        return all_cards
+    stories = []
+    for i, c in enumerate(all_cards):
+        cat   = c.get("cat_label", "")
+        head  = c.get("headline", "")
+        stories.append(f"{i+1}. [{cat}] {head}")
+    stories_text = "\n".join(stories)
+    n = len(all_cards)
+    prompt = (
+        f"Rank these {n} news stories by true global importance and urgency.\n"
+        "Most consequential stories come first regardless of category. "
+        "A major World or US development beats a minor Tech story. "
+        "A major Sports story (death, championship) beats a routine Business update.\n\n"
+        f"{stories_text}\n\n"
+        "Return ONLY a JSON array of the original numbers in ranked order, most important first.\n"
+        "Example: [4, 1, 12, 7, ...]"
+    )
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1].lstrip("json").strip()
+        indices = json.loads(raw)
+        seen, ranked = set(), []
+        for idx in indices:
+            i = int(idx) - 1
+            if 0 <= i < n and i not in seen:
+                seen.add(i)
+                ranked.append(all_cards[i])
+        for i, card in enumerate(all_cards):
+            if i not in seen:
+                ranked.append(card)
+        print(f"  Global ranking: {len(ranked)} stories ordered")
+        return ranked
+    except Exception as e:
+        print(f"  Global ranking failed ({e}), using urgency_score fallback")
+        return all_cards
+
+
 def render_index(all_categories):
     timestamp = now_et()
     top_cat   = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
@@ -303,6 +381,7 @@ def render_index(all_categories):
 
     # -- Card grid -- category heroes + regular cards, sorted by urgency --
     all_cards = []
+    top_cat_key = top_cat["category_key"]
 
     # Add category hero stories into the pool — they deserve to rank with everything
     for cat in all_categories:
@@ -316,6 +395,8 @@ def render_index(all_categories):
             "cat_key":       cat["category_key"],
             "cat_label":     cat["category_label"],
             "is_hero":       True,
+            # Mark the story that is also the "all" hero so we can hide it in the All grid
+            "is_all_hero":   cat["category_key"] == top_cat_key,
         })
 
     # Add regular cards
@@ -328,7 +409,8 @@ def render_index(all_categories):
                 "is_hero":   False,
             })
 
-    all_cards.sort(key=lambda c: c.get("urgency_score", 0), reverse=True)
+    all_cards.sort(key=lambda c: c.get("urgency_score", 0), reverse=True)  # Pre-sort
+    all_cards = global_rank(all_cards)  # Final true global ranking
 
     cards_html = ""
     for card in all_cards:
@@ -339,10 +421,10 @@ def render_index(all_categories):
         cl       = card["cat_label"]
         img_url  = card.get("image_url", "")
         img_tag  = f'<img class="card-image" src="{img_url}" alt="" loading="lazy">' if img_url else ""
-        # Hero cards hide in their own category view — the hero section already shows them there
-        is_hero_attr = ' data-is-hero="true"' if card.get("is_hero") else ""
+        is_hero_attr    = ' data-is-hero="true"' if card.get("is_hero") else ""
+        is_all_hero_attr = ' data-all-hero="true"' if card.get("is_all_hero") else ""
         cards_html += f"""
-      <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}>
+      <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}{is_all_hero_attr}>
         {img_tag}
         <span class="card-tag">{cl}</span>
         <h2 class="card-headline">{card["headline"]}</h2>
