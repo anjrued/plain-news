@@ -281,9 +281,9 @@ Scoring guidance:
 CRITICAL ACCURACY RULES - never violate these:
 - Only write details explicitly stated in the provided headlines and summaries.
 - Never speculate, infer, or invent causes, circumstances, or details not in the source.
-- If a cause of death, motive, or detail is unconfirmed, do not include it. Write "details have not been confirmed" or omit it.
+- If a detail is not in the source material, simply omit it. Do not comment on its absence. Do not say "details have not been confirmed" or "no official statement has been released" — that is itself an unverified claim. Just don't include what you don't know.
 - Never fabricate quotes, statistics, names, or events not present in the source material.
-- If a story is developing and details are limited, write only what is known and note that reporting is ongoing.
+- Write only what is known. Stop there. Readers understand that an article covers what is currently reported.
 
 TEMPORAL ACCURACY RULES - always apply these:
 - Pay close attention to when events occurred. Use past tense for events that have already happened.
@@ -310,7 +310,7 @@ def generate_category_content(category_key, category_label, headlines):
 Tasks:
 1. Identify the single most important/urgent story.
 2. Write a headline that accurately reflects the current state of the story. If the story is an update to a previous event, the headline should reflect that (e.g. "New Details Emerge in Kyle Busch Death" or "Kyle Busch Found Unresponsive Before Death"). Never write a headline that makes a past event sound like it is happening now.
-3. Write a 420-480 word factual article for the hero position.
+3. Write a 420-480 word factual article for the hero position. Write ONLY what is explicitly stated in the headline and summary provided. If details are limited, write a shorter accurate article rather than padding with speculation. Do not add context, background, or details that are not in the source material.
 4. For the next {CARDS_PER_CATEGORY} most important stories write:
    - teaser: one sentence card preview
    - body: two short paragraphs (~120 words) expanding on the story
@@ -397,41 +397,46 @@ def make_paragraphs(text):
 
 
 def fetch_article_text(url, max_words=900):
-    """Fetch full article text using Anthropic web_fetch tool."""
-    if not url or "news.google.com" in url:
-        print(f"  Article fetch skipped: {'no URL' if not url else 'unresolved Google URL'}")
+    """Fetch full article text using Anthropic web_fetch tool.
+    Handles Google News URLs, redirects, and paywalls via Anthropic infrastructure.
+    """
+    if not url:
+        print("  Article fetch skipped: no URL")
         return ""
     try:
-        print(f"  Fetching article: {url[:70]}")
+        print(f"  Fetching: {url[:80]}")
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=1200,
+            max_tokens=1500,
             tools=[{
                 "type": "web_fetch_20250910",
                 "name": "web_fetch",
-                "max_uses": 1,
+                "max_uses": 2,
             }],
             messages=[{
                 "role": "user",
-                "content": f"Fetch this article and return the full body text only, no commentary: {url}"
+                "content": (
+                    f"Fetch this URL and return ONLY the article body text, "
+                    f"no headlines, no navigation, no ads, just the article content: {url}"
+                )
             }],
             extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
         )
-        # Extract text from all content blocks
+        # Collect all text blocks
         text = " ".join(
             block.text for block in response.content
-            if hasattr(block, "text") and block.text
+            if hasattr(block, "text") and block.text and len(block.text) > 50
         ).strip()
-        if not text or len(text) < 150:
-            print(f"  Article fetch: insufficient content ({len(text)} chars)")
+        if not text or len(text.split()) < 100:
+            print(f"  Article fetch: not enough content ({len(text.split())} words)")
             return ""
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words]) + "..."
-        print(f"  Fetched article: {len(words)} words")
+        print(f"  Fetched: {len(words)} words")
         return text
     except Exception as e:
-        print(f"  Article fetch failed ({url[:50]}): {e}")
+        print(f"  Article fetch failed: {e}")
         return ""
 
 def enhance_hero_article(hero, full_text):
@@ -442,8 +447,10 @@ def enhance_hero_article(hero, full_text):
     prompt = (
         f"You wrote this article:\n\n{body}\n\n"
         f"Here is the full source article:\n\n{full_text}\n\n"
-        "Rewrite and improve your article using the full source text. "
-        "Add specific quotes, exact figures, names, and context that were missing. "
+        "Rewrite your article using ONLY facts, quotes, and details explicitly present in the source article above. "
+        "Do not add anything not in the source. Do not speculate or infer. "
+        "If the source confirms a specific detail (cause of death, reason for resignation, etc.) include it. "
+        "If a detail is not in the source, omit it entirely — do not mention its absence or say it is unconfirmed. "
         "Keep it 420-480 words. Plain direct English. No em dashes. No jargon."
     )
     try:
