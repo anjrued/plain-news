@@ -459,13 +459,7 @@ def fetch_article_text(url, max_words=900):
             }],
             messages=[{
                 "role": "user",
-                "content": (
-                    f"I need the full text of a news article. URL: {url}\n\n"
-                    "This may be a Google News URL. Please:\n"
-                    "1. Fetch this URL\n"
-                    "2. If it is a Google News page, find and fetch the actual publisher article URL (AP, Reuters, BBC, ESPN, etc.)\n"
-                    "3. Return ONLY the full article body text. No navigation, no ads, no related articles."
-                )
+                "content": f"Fetch this URL and return ONLY the article body text, no headlines, no navigation, no ads, just the article content: {url}"
             }],
             extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
         )
@@ -478,7 +472,7 @@ def fetch_article_text(url, max_words=900):
             print(f"  Article fetch: not enough content ({len(text.split())} words)")
             return ""
         # Reject error messages from the fetch tool
-        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source", "error message", "could not retrieve", "i cannot rewrite", "not able to"]
+        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source", "error message", "could not retrieve", "i cannot rewrite", "not able to", "too long", "url you provided", "no article", "cannot create", "need you to provide", "no source article provided"]
         if any(signal in text.lower()[:300] for signal in error_signals):
             print(f"  Article fetch: got error message instead of article, skipping")
             return ""
@@ -514,7 +508,7 @@ def enhance_hero_article(hero, full_text):
     if not full_text or len(full_text.split()) < 150:
         return hero
     # Second guard — reject if the text looks like a fetch error
-    error_signals = ["cannot fetch", "unable to access", "cannot access", "no source article", "error message", "could not retrieve", "i cannot rewrite", "not able to", "google news redirect"]
+    error_signals = ["cannot fetch", "unable to access", "cannot access", "no source article", "error message", "could not retrieve", "i cannot rewrite", "not able to", "google news redirect", "too long", "url you provided", "no article", "cannot create", "need you to provide", "no source article provided"]
     if any(signal in full_text.lower()[:400] for signal in error_signals):
         print(f"  Enhancement skipped: text appears to be an error message")
         return hero
