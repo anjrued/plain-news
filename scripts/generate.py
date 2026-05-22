@@ -144,15 +144,15 @@ def build_image_bank():
                 title = entry.get("title", "").strip()
                 img   = extract_image(entry)
                 if title and img:
-                    bank.append({"title": title, "image_url": img})
+                    bank.append({"title": title, "image_url": img, "source": url})
         except Exception as e:
             print(f"  Image bank feed error ({url[:50]}): {e}")
     print(f"  Image bank built: {len(bank)} entries with images")
     return bank
 
 
-def match_image(headline, image_bank):
-    """Fuzzy-match a headline against the image bank. Returns best matching image URL."""
+def match_image(headline, image_bank, cat_key=""):
+    """Fuzzy-match a headline against the image bank."""
     stops = {"that","this","with","from","have","been","after","over","into","says","said","will","than","more","also","when","were","they","their","about"}
     def tokens(text):
         return set(w.lower().strip(".,;:()") for w in text.split() if len(w) > 3 and w.lower() not in stops)
@@ -222,10 +222,12 @@ Write in plain direct English. No jargon. No padding. No em dashes."""
 
 
 def generate_category_content(category_key, category_label, headlines):
-    headlines_text = "\n".join(
-        f"{i+1}. {h['title']}\n   {h['summary'][:200]}"
-        for i, h in enumerate(headlines)
-    )
+    # Build headlines with raw published strings for Claude to copy back
+    def hl_line(i, h):
+        pub = h.get("published", "")
+        pub_str = f" [pub:{pub}]" if pub else ""
+        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:200]}"
+    headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
 
     prompt = f"""Here are the current top headlines for the {category_label} category:
 
@@ -244,14 +246,15 @@ Return ONLY valid JSON:
   "hero": {{
     "headline": "...",
     "body": "full article text with paragraph breaks",
-    "urgency_score": <1-10>
+    "urgency_score": <1-10>,
+    "published": "copy the [pub:...] string from the chosen headline exactly, including the date"
   }},
   "cards": [
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>}}
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}}
   ]
 }}"""
 
@@ -272,6 +275,16 @@ Return ONLY valid JSON:
     data = json.loads(raw)
     data["category_key"]   = category_key
     data["category_label"] = category_label
+
+    # Format the raw published strings Claude copied back
+    raw_pub = data["hero"].get("published", "")
+    # Strip "pub:" prefix if Claude included it
+    raw_pub = raw_pub.replace("pub:", "").strip().strip("[]")
+    data["hero"]["published"] = format_age(raw_pub)
+    for card in data.get("cards", []):
+        raw_pub = card.get("published", "").replace("pub:", "").strip().strip("[]")
+        card["published"] = format_age(raw_pub)
+
     return data
 
 
@@ -347,25 +360,29 @@ def enhance_hero_article(hero, full_text):
 
 
 def format_age(published_str):
-    """Format publish time: minutes ago if fresh, actual time otherwise."""
+    """Format publish time using stdlib only — no pytz needed."""
     if not published_str:
         return ""
     try:
         from email.utils import parsedate_to_datetime
-        import pytz
-        et      = pytz.timezone("America/New_York")
-        dt_utc  = parsedate_to_datetime(published_str).astimezone(pytz.utc)
-        now_utc = datetime.now(pytz.utc)
+        from datetime import timezone, timedelta
+        et      = timezone(timedelta(hours=-4))  # EDT approximation
+        dt_utc  = parsedate_to_datetime(published_str).astimezone(timezone.utc)
+        now_utc = datetime.now(timezone.utc)
         mins    = int((now_utc - dt_utc).total_seconds() / 60)
         dt_et   = dt_utc.astimezone(et)
-        time_str = dt_et.strftime("%-I:%M %p ET")
+        now_et  = now_utc.astimezone(et)
+        hour    = dt_et.hour % 12 or 12
+        ampm    = "AM" if dt_et.hour < 12 else "PM"
+        time_str = f"{hour}:{dt_et.strftime('%M')} {ampm} ET"
         if mins < 60:
             return "A few minutes ago"
-        if dt_et.date() == now_utc.astimezone(et).date():
+        if dt_et.date() == now_et.date():
             return time_str
         if mins < 2880:
             return f"Yesterday, {time_str}"
-        return dt_et.strftime("%b %-d, ") + time_str
+        months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+        return f"{months[dt_et.month-1]} {dt_et.day}, {time_str}"
     except Exception:
         return ""
 
@@ -606,21 +623,15 @@ def main():
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
-            # Images and publish time
+            # Images
             match = find_image(data["hero"]["headline"], headlines)
-            img = match["image_url"] or match_image(data["hero"]["headline"], image_bank)
+            img = match["image_url"] or match_image(data["hero"]["headline"], image_bank, cat_key)
             data["hero"]["image_url"] = img
-            data["hero"]["published"] = format_age(match["published"])
 
             # Full article text — fetch and enhance hero
             article_url = match["link"]
             full_text   = fetch_article_text(article_url)
             data["hero"] = enhance_hero_article(data["hero"], full_text)
-
-            # Attach publish times to cards
-            for card in data["cards"]:
-                card_match = find_image(card["headline"], headlines)
-                card["published"] = format_age(card_match["published"])
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
