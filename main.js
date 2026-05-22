@@ -19,34 +19,54 @@ if (toggle) {
 
 // -- EXPAND / COLLAPSE --
 function toggleExpand(btn) {
-  const hero    = btn.closest(".hero, .article-card");
-  const expand  = hero.querySelector(".article-expand");
-  const summary = hero.querySelector(".hero-summary, .card-summary");
-  const foot    = hero.querySelector(".hero-foot, .card-foot");
+  const container = btn.closest(".hero, .article-card");
+  expandContainer(container);
+}
+
+function expandContainer(container) {
+  const expand  = container.querySelector(".article-expand");
+  const summary = container.querySelector(".hero-summary, .card-summary");
+  const foot    = container.querySelector(".hero-foot, .card-foot");
+  const btn     = container.querySelector(".expand-btn");
   const isOpen  = expand.classList.contains("open");
 
   if (isOpen) {
     expand.classList.remove("open");
     if (summary) summary.style.display = "";
     if (foot)    foot.style.display    = "";
+    if (btn)     btn.innerHTML = "Continue reading &darr;";
   } else {
     expand.classList.add("open");
     if (summary) summary.style.display = "none";
     if (foot)    foot.style.display    = "none";
+    if (btn)     btn.innerHTML = "Close &uarr;";
     setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
   }
 }
 
 function collapseThis(collapseBtn) {
-  const hero    = collapseBtn.closest(".hero, .article-card");
-  const expand  = hero.querySelector(".article-expand");
-  const summary = hero.querySelector(".hero-summary, .card-summary");
-  const foot    = hero.querySelector(".hero-foot, .card-foot");
+  const container = collapseBtn.closest(".hero, .article-card");
+  const expand    = container.querySelector(".article-expand");
+  const summary   = container.querySelector(".hero-summary, .card-summary");
+  const foot      = container.querySelector(".hero-foot, .card-foot");
+  const btn       = container.querySelector(".expand-btn");
 
   expand.classList.remove("open");
   if (summary) summary.style.display = "";
   if (foot)    foot.style.display    = "";
+  if (btn)     btn.innerHTML = "Continue reading &darr;";
 }
+
+// Make entire card clickable — but not when clicking a button or expanded content
+document.addEventListener("click", e => {
+  const card = e.target.closest(".article-card");
+  if (!card) return;
+  if (card.classList.contains("support-card")) return;
+  if (e.target.closest(".article-expand")) return;  // clicking inside expanded content
+  if (e.target.closest(".collapse-btn")) return;    // collapse button handles itself
+  if (e.target.closest(".expand-btn")) return;      // expand button handles itself
+  expandContainer(card);
+});
 
 // -- CATEGORY FILTER --
 document.querySelectorAll(".cat-btn").forEach(btn => {
