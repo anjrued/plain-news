@@ -73,6 +73,57 @@ client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 # -- RSS FETCHING --
 
+def extract_image(entry):
+    """Try every known location for an image in an RSS entry."""
+    def valid(u):
+        if not u or len(u) < 15: return False
+        return not any(x in u.lower() for x in ["1x1", "pixel", "spacer", "tracking", "data:"])
+
+    # 1. media:thumbnail (BBC, many feeds)
+    for t in (getattr(entry, "media_thumbnail", None) or []):
+        if isinstance(t, dict) and valid(t.get("url", "")):
+            return t["url"]
+
+    # 2. media:content
+    for m in (getattr(entry, "media_content", None) or []):
+        if not isinstance(m, dict): continue
+        u = m.get("url", "")
+        if valid(u) and ("image" in m.get("type", "") or any(u.lower().endswith(e) for e in (".jpg",".jpeg",".png",".webp"))):
+            return u
+
+    # 3. enclosures
+    for enc in (getattr(entry, "enclosures", None) or []):
+        if isinstance(enc, dict) and "image" in enc.get("type", ""):
+            u = enc.get("href", enc.get("url", ""))
+            if valid(u): return u
+
+    # 4. Parse <img> from description HTML (catches Google News thumbnails)
+    html = ""
+    for field in ["description", "summary"]:
+        val = entry.get(field, "") or getattr(entry, field, "")
+        if isinstance(val, list) and val:
+            html = val[0].get("value", "") if isinstance(val[0], dict) else str(val[0])
+        elif isinstance(val, str):
+            html = val
+        if html: break
+
+    for match in re.finditer(r'<img[^>]+src=["\']([^"\']{20,})["\']', html):
+        u = match.group(1)
+        if valid(u): return u
+
+    return ""
+
+
+def find_image(headline, entries):
+    """Match Claude's chosen headline back to its RSS entry to retrieve the image."""
+    h = headline.lower()[:50]
+    for entry in entries:
+        t = entry.get("title", "").lower()[:50]
+        if h in t or t in h:
+            return entry.get("image_url", "")
+    return ""
+
+
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
     seen, entries = set(), []
     for url in feeds:
@@ -84,8 +135,9 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                     continue
                 seen.add(title.lower())
                 entries.append({
-                    "title":   title,
-                    "summary": entry.get("summary", entry.get("description", ""))[:400],
+                    "title":     title,
+                    "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "image_url": extract_image(entry),
                 })
         except Exception as e:
             print(f"  Feed error ({url}): {e}")
@@ -187,18 +239,26 @@ def render_index(all_categories):
         fade       = " fade-in" if visible else ""
         preview    = hero["body"][:380].rstrip()
         paragraphs = make_paragraphs(hero["body"])
+        img_url    = hero.get("image_url", "")
+        img_html   = f'<img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">' if img_url else ""
+        wrap_class = "hero-inner hero-inner--split" if img_url else "hero-inner"
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
-      <span class="tag">{cat_label}</span>
-      <h1>{hero["headline"]}</h1>
-      <p class="hero-summary">{preview}...</p>
-      <div class="hero-foot">
-        <span class="meta">Today, {timestamp}</span>
-        <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
-      </div>
-      <div class="article-expand hero-expand">
-        <div class="hero-expand-body">{paragraphs}</div>
-        <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+      <div class="{wrap_class}">
+        <div class="hero-content">
+          <span class="tag">{cat_label}</span>
+          <h1>{hero["headline"]}</h1>
+          <p class="hero-summary">{preview}...</p>
+          <div class="hero-foot">
+            <span class="meta">Today, {timestamp}</span>
+            <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+          </div>
+          <div class="article-expand hero-expand">
+            <div class="hero-expand-body">{paragraphs}</div>
+            <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+          </div>
+        </div>
+        {img_html}
       </div>
     </section>"""
 
@@ -222,10 +282,13 @@ def render_index(all_categories):
         teaser = card.get("teaser", card.get("summary", ""))
         body   = card.get("body", card.get("summary", ""))
         card_paragraphs = make_paragraphs(body)
-        ck = card["cat_key"]
-        cl = card["cat_label"]
+        ck      = card["cat_key"]
+        cl      = card["cat_label"]
+        img_url = card.get("image_url", "")
+        img_tag = f'<img class="card-image" src="{img_url}" alt="" loading="lazy">' if img_url else ""
         cards_html += f"""
       <div class="article-card fade-in" data-cat="{ck}">
+        {img_tag}
         <span class="card-tag">{cl}</span>
         <h2 class="card-headline">{card["headline"]}</h2>
         <p class="card-summary">{teaser}</p>
@@ -341,8 +404,12 @@ def main():
             continue
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
+            # Attach images by matching headlines back to RSS entries
+            data["hero"]["image_url"] = find_image(data["hero"]["headline"], headlines)
+            for card in data["cards"]:
+                card["image_url"] = find_image(card["headline"], headlines)
             all_categories.append(data)
-            print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')})")
+            print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if data['hero']['image_url'] else 'no'})")
         except Exception as e:
             print(f"  Claude error for {cat_config['label']}: {e}")
             continue
