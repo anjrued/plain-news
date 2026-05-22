@@ -244,7 +244,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 seen.add(title.lower())
                 entries.append({
                     "title":     title,
-                    "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "summary":   entry.get("summary", entry.get("description", ""))[:800],
                     "link":      extract_publisher_url(entry),
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
@@ -300,7 +300,7 @@ def generate_category_content(category_key, category_label, headlines):
     def hl_line(i, h):
         pub = h.get("published", "")
         pub_str = f" [pub:{pub}]" if pub else ""
-        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:200]}"
+        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:500]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
 
     prompt = f"""Here are the current top headlines for the {category_label} category:
@@ -430,6 +430,11 @@ def fetch_article_text(url, max_words=900):
         if not text or len(text.split()) < 100:
             print(f"  Article fetch: not enough content ({len(text.split())} words)")
             return ""
+        # Reject error messages from the fetch tool
+        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source", "error message", "could not retrieve", "i cannot rewrite", "not able to"]
+        if any(signal in text.lower()[:300] for signal in error_signals):
+            print(f"  Article fetch: got error message instead of article, skipping")
+            return ""
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words]) + "..."
@@ -439,10 +444,33 @@ def fetch_article_text(url, max_words=900):
         print(f"  Article fetch failed: {e}")
         return ""
 
+def gather_related_summaries(hero_headline, hero_index, headlines):
+    stops = {"that","this","with","from","have","been","said","will","more","also","when","were","they","their","about"}
+    def tokens(text):
+        import re as _re
+        return set(_re.sub(r'[^a-z0-9 ]', ' ', text.lower()).split()) - stops
+    hero_tokens = tokens(hero_headline)
+    combined = []
+    for i, h in enumerate(headlines):
+        entry_text = h.get("title","") + " " + h.get("summary","")
+        if i == hero_index:
+            combined.insert(0, entry_text)
+            continue
+        if len(hero_tokens & tokens(h.get("title",""))) >= 2:
+            combined.append(entry_text)
+    sep = chr(10) + chr(10)
+    return sep.join(combined[:6])
+
+
 def enhance_hero_article(hero, full_text):
     """Rewrite the hero article using the full source text for accuracy and detail."""
     if not full_text or len(full_text.split()) < 150:
-        return hero  # Not enough text to improve on
+        return hero
+    # Second guard — reject if the text looks like a fetch error
+    error_signals = ["cannot fetch", "unable to access", "cannot access", "no source article", "error message", "could not retrieve", "i cannot rewrite", "not able to", "google news redirect"]
+    if any(signal in full_text.lower()[:400] for signal in error_signals):
+        print(f"  Enhancement skipped: text appears to be an error message")
+        return hero
     body = hero.get("body", "")
     prompt = (
         f"You wrote this article:\n\n{body}\n\n"
@@ -770,10 +798,19 @@ def main():
             img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
             data["hero"]["image_url"] = img
 
-            # Full article text — fetch and enhance hero
+            # Full article enrichment
+            # Step 1: gather all related RSS summaries from the feed (always available)
+            hero_idx    = data["hero"].get("source_index", 1) - 1
+            related     = gather_related_summaries(data["hero"]["headline"], hero_idx, headlines)
+
+            # Step 2: try full article fetch for richer content
             article_url = data["hero"].get("link", "")
             full_text   = fetch_article_text(article_url)
-            data["hero"] = enhance_hero_article(data["hero"], full_text)
+
+            # Step 3: enhance with best available source — full article if we got it, related summaries otherwise
+            source_text = full_text if full_text else related
+            if source_text:
+                data["hero"] = enhance_hero_article(data["hero"], source_text)
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
