@@ -517,7 +517,7 @@ def render_index(all_categories):
 
     # Static support card injected at position 3
     support_card = """
-      <div class="article-card support-card fade-in" data-cat="all">
+      <div class="article-card support-card fade-in" data-cat="all" data-support-card="true">
         <span class="card-tag support-card-tag">Plain</span>
         <h2 class="card-headline support-card-headline">Plain is free. Help keep it that way.</h2>
         <p class="card-summary">No ads. No paywalls. No agenda. Plain runs entirely on reader support. If it's worth something to you, consider buying us a coffee.</p>
