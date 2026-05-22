@@ -397,35 +397,42 @@ def make_paragraphs(text):
 
 
 def fetch_article_text(url, max_words=900):
-    """Fetch full article text from a publisher URL using trafilatura."""
+    """Fetch full article text using Anthropic web_fetch tool."""
     if not url or "news.google.com" in url:
         print(f"  Article fetch skipped: {'no URL' if not url else 'unresolved Google URL'}")
         return ""
     try:
-        import trafilatura
         print(f"  Fetching article: {url[:70]}")
-        downloaded = trafilatura.fetch_url(url)
-        if not downloaded:
-            print(f"  Article fetch: no content returned")
-            return ""
-        text = trafilatura.extract(
-            downloaded,
-            include_comments=False,
-            include_tables=False,
-            no_fallback=False,
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1200,
+            tools=[{
+                "type": "web_fetch_20250910",
+                "name": "web_fetch",
+                "max_uses": 1,
+            }],
+            messages=[{
+                "role": "user",
+                "content": f"Fetch this article and return the full body text only, no commentary: {url}"
+            }],
+            extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
         )
-        if not text:
-            print(f"  Article fetch: trafilatura extracted no text")
+        # Extract text from all content blocks
+        text = " ".join(
+            block.text for block in response.content
+            if hasattr(block, "text") and block.text
+        ).strip()
+        if not text or len(text) < 150:
+            print(f"  Article fetch: insufficient content ({len(text)} chars)")
             return ""
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words]) + "..."
         print(f"  Fetched article: {len(words)} words")
-        return text.strip()
+        return text
     except Exception as e:
         print(f"  Article fetch failed ({url[:50]}): {e}")
         return ""
-
 
 def enhance_hero_article(hero, full_text):
     """Rewrite the hero article using the full source text for accuracy and detail."""
