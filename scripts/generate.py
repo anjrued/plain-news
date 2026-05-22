@@ -167,13 +167,16 @@ def match_image(headline, image_bank):
 
 
 def find_image(headline, entries):
-    """Match headline back to RSS entry to get its image URL."""
+    """Match headline back to RSS entry to get its image URL and source link."""
     h = headline.lower()[:50]
     for entry in entries:
         t = entry.get("title", "").lower()[:50]
         if h in t or t in h:
-            return entry.get("image_url", "")
-    return ""
+            return {
+                "image_url": entry.get("image_url", ""),
+                "link":      entry.get("link", ""),
+            }
+    return {"image_url": "", "link": ""}
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
@@ -190,6 +193,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 entries.append({
                     "title":     title,
                     "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "link":      entry.get("link", ""),
                     "image_url": extract_image(entry),
                 })
                 if len(entries) >= limit:
@@ -284,6 +288,60 @@ def make_paragraphs(text):
         for p in text.split("\n\n")
         if p.strip()
     )
+
+
+def fetch_article_text(url, max_words=900):
+    """Fetch full article text from a URL using trafilatura."""
+    if not url:
+        return ""
+    try:
+        import trafilatura
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            return ""
+        text = trafilatura.extract(
+            downloaded,
+            include_comments=False,
+            include_tables=False,
+            no_fallback=False,
+        )
+        if not text:
+            return ""
+        words = text.split()
+        if len(words) > max_words:
+            text = " ".join(words[:max_words]) + "..."
+        print(f"  Fetched article: {len(words)} words")
+        return text.strip()
+    except Exception as e:
+        print(f"  Article fetch failed ({str(url)[:50]}): {e}")
+        return ""
+
+
+def enhance_hero_article(hero, full_text):
+    """Rewrite the hero article using the full source text for accuracy and detail."""
+    if not full_text or len(full_text.split()) < 150:
+        return hero  # Not enough text to improve on
+    body = hero.get("body", "")
+    prompt = (
+        f"You wrote this article:\n\n{body}\n\n"
+        f"Here is the full source article:\n\n{full_text}\n\n"
+        "Rewrite and improve your article using the full source text. "
+        "Add specific quotes, exact figures, names, and context that were missing. "
+        "Keep it 420-480 words. Plain direct English. No em dashes. No jargon."
+    )
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=700,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        enhanced = resp.content[0].text.strip()
+        if enhanced:
+            hero["body"] = enhanced
+            print(f"  Hero article enhanced with full source text")
+    except Exception as e:
+        print(f"  Enhancement failed ({e}), keeping original")
+    return hero
 
 
 def global_rank(all_cards):
@@ -520,9 +578,15 @@ def main():
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
-            # Images: try RSS match first, then image bank fuzzy match
-            img = find_image(data["hero"]["headline"], headlines) or match_image(data["hero"]["headline"], image_bank)
+            # Images
+            match = find_image(data["hero"]["headline"], headlines)
+            img = match["image_url"] or match_image(data["hero"]["headline"], image_bank)
             data["hero"]["image_url"] = img
+
+            # Full article text — fetch and enhance hero
+            article_url = match["link"]
+            full_text   = fetch_article_text(article_url)
+            data["hero"] = enhance_hero_article(data["hero"], full_text)
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
