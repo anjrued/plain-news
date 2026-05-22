@@ -70,9 +70,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 .article-expand { display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
 .article-expand.open { display: block; }
 
-/* Hero expanded body — two columns on desktop */
-.hero-expand-body { column-count: 2; column-gap: 48px; }
-.hero-expand-body p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 18px; break-inside: avoid; }
+/* Hero expanded body — single column */
+.hero-expand-body { }
+.hero-expand-body p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 18px; }
 
 /* Card expanded body — single column */
 .card-expand-body p { font-size: 14px; line-height: 1.75; color: var(--text-secondary); margin-bottom: 14px; }
@@ -124,7 +124,6 @@ footer { border-top: 1px solid var(--border); padding: 28px 24px; margin-top: 60
 }
 @media (max-width: 680px) {
   .support-box { flex-direction: column; align-items: flex-start; }
-  .hero-expand-body { column-count: 1; }
 }
 @media (max-width: 580px) {
   .articles-grid { grid-template-columns: 1fr; }
