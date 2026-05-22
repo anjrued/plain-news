@@ -281,9 +281,13 @@ Scoring guidance:
 CRITICAL ACCURACY RULES - never violate these:
 - Only write details explicitly stated in the provided headlines and summaries.
 - Never speculate, infer, or invent causes, circumstances, or details not in the source.
-- If a detail is not in the source material, simply omit it. Do not comment on its absence. Do not say "details have not been confirmed" or "no official statement has been released" — that is itself an unverified claim. Just don't include what you don't know.
-- Never fabricate quotes, statistics, names, or events not present in the source material.
-- Write only what is known. Stop there. Readers understand that an article covers what is currently reported.
+- If a detail is not in the source material, omit it completely. Do not reference its absence in any way.
+- NEVER write phrases like: 'details have not been confirmed', 'no official statement has been released',
+  'it remains unclear', 'has not been announced', 'has not responded', 'no further details available',
+  'reporting is ongoing', 'it is unknown at this time', or any similar absence language.
+  These phrases are themselves unverified claims and violate accuracy rules.
+- Never fabricate quotes, statistics, names, or events not in the source material.
+- Write what is confirmed. Stop when you run out. The article length naturally reflects what is known.
 
 TEMPORAL ACCURACY RULES - always apply these:
 - Pay close attention to when events occurred. Use past tense for events that have already happened.
@@ -310,7 +314,7 @@ def generate_category_content(category_key, category_label, headlines):
 Tasks:
 1. Identify the single most important/urgent story.
 2. Write a headline that accurately reflects the current state of the story. If the story is an update to a previous event, the headline should reflect that (e.g. "New Details Emerge in Kyle Busch Death" or "Kyle Busch Found Unresponsive Before Death"). Never write a headline that makes a past event sound like it is happening now.
-3. Write a factual article for the hero position using ONLY what is explicitly stated in the provided headlines and summaries. Do not pad, speculate, or add context not in the source. Write as much as the source material supports — if details are limited, a short accurate article is better than a long padded one.
+3. Write a factual article for the hero position. Target 420-480 words when the summaries provide sufficient detail. If the summaries are brief, write fewer words rather than padding with speculation — accuracy matters more than length. You may provide general factual context (who someone is, what an organisation does) but never invent specific details like causes, reasons, quotes, or outcomes that are not in the source.
 4. For the next {CARDS_PER_CATEGORY} most important stories write:
    - teaser: one sentence card preview
    - body: two short paragraphs (~120 words) expanding on the story
@@ -375,6 +379,46 @@ Return ONLY valid JSON:
     data["hero"] = attach_source(data["hero"], headlines)
     for card in data.get("cards", []):
         attach_source(card, headlines)
+
+    # Age-based score decay — penalise stories older than 24 hours
+    def decay_score(item):
+        score = item.get("urgency_score", 5)
+        pub_raw = ""
+        # Try to get raw published from the source headline
+        idx = item.get("source_index")
+        if idx is not None:
+            try:
+                pub_raw = headlines[int(idx) - 1].get("published", "")
+            except (IndexError, ValueError, TypeError):
+                pass
+        if pub_raw:
+            try:
+                from email.utils import parsedate_to_datetime
+                from datetime import timezone
+                import re as _re
+                dt  = parsedate_to_datetime(pub_raw).astimezone(timezone.utc)
+                now = datetime.now(timezone.utc)
+                hrs = (now - dt).total_seconds() / 3600
+                # Check if headline contains genuine new development keywords
+                headline = item.get('headline', '').lower()
+                update_words = ['confirms', 'confirmed', 'announces', 'announced', 'reveals',
+                                'charges', 'arrested', 'resigns', 'fired', 'dies', 'dead',
+                                'breaks', 'exclusive', 'update', 'new details']
+                is_genuine_update = any(w in headline for w in update_words)
+                # Only decay if it looks like a follow-up, not a genuine new development
+                if not is_genuine_update:
+                    if hrs > 48:
+                        score = min(score, 4)   # stale follow-up 2+ days: cap at 4
+                    elif hrs > 24:
+                        score = min(score, 6)   # stale follow-up 1-2 days: cap at 6
+            except Exception:
+                pass
+        item["urgency_score"] = score
+        return item
+
+    data["hero"] = decay_score(data["hero"])
+    for card in data.get("cards", []):
+        decay_score(card)
 
     return data
 
@@ -482,12 +526,12 @@ def enhance_hero_article(hero, full_text):
         "Do not add anything not in the source. Do not speculate or infer. "
         "If the source confirms a specific detail (cause of death, reason for resignation, etc.) include it. "
         "If a detail is not in the source, omit it entirely — do not mention its absence. "
-        "Write as much as the source supports. A shorter accurate article is better than a padded one. No em dashes."
+        "Write 420-480 words. Plain direct English. No em dashes."
     )
     try:
         resp = client.messages.create(
             model="claude-sonnet-4-5",
-            max_tokens=700,
+            max_tokens=1200,
             messages=[{"role": "user", "content": prompt}]
         )
         enhanced = resp.content[0].text.strip()
@@ -802,18 +846,19 @@ def main():
             data["hero"]["image_url"] = img
 
             # Full article enrichment
-            # Step 1: gather all related RSS summaries from the feed (always available)
-            hero_idx    = data["hero"].get("source_index", 1) - 1
-            related     = gather_related_summaries(data["hero"]["headline"], hero_idx, headlines)
+            # Step 1: gather related RSS summaries as fallback context
+            hero_idx = data["hero"].get("source_index", 1) - 1
+            related  = gather_related_summaries(data["hero"]["headline"], hero_idx, headlines)
 
-            # Step 2: try full article fetch for richer content
+            # Step 2: try full article fetch
             article_url = data["hero"].get("link", "")
             full_text   = fetch_article_text(article_url)
 
-            # Step 3: enhance with best available source — full article if we got it, related summaries otherwise
-            source_text = full_text if full_text else related
-            if source_text:
-                data["hero"] = enhance_hero_article(data["hero"], source_text)
+            # Step 3: only enhance if fetch returned meaningful content (150+ words)
+            if full_text and len(full_text.split()) >= 150:
+                data["hero"] = enhance_hero_article(data["hero"], full_text)
+            else:
+                print(f"  Using base article (fetch returned {len(full_text.split()) if full_text else 0} words)")
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
