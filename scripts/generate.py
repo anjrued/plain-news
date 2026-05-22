@@ -119,59 +119,83 @@ BROWSER_HEADERS = {
 }
 
 
-def resolve_url(url, timeout=4):
-    """Follow Google News redirect to get the actual publisher article URL."""
-    if not url or "google.com" not in url:
-        return url
+def decode_google_news_url(url):
+    """Decode a Google News RSS article URL to get the actual publisher URL.
+    The article ID is base64-encoded and contains the source URL embedded in it.
+    """
+    import base64
     try:
-        import requests as _req
-        # HEAD request follows redirects cheaply
-        resp = _req.head(url, headers=BROWSER_HEADERS, allow_redirects=True, timeout=timeout)
-        if "google.com" not in resp.url:
-            return resp.url
-        # Still on Google - parse the page for og:url
-        resp2 = _req.get(url, headers=BROWSER_HEADERS, timeout=timeout, stream=True)
-        html = b""
-        for chunk in resp2.iter_content(4096):
-            html += chunk
-            if len(html) >= 15000: break
-        html = html.decode("utf-8", errors="ignore")
-        dq, sq = chr(34), chr(39)
-        q  = "[" + dq + sq + "]"
-        nq = "[^" + dq + sq + "]"
-        pat = re.compile("<meta[^>]+property=" + q + "og:url" + q + "[^>]+content=" + q + "(" + nq + "+)" + q, re.I)
-        m = pat.search(html)
-        if m and "google.com" not in m.group(1):
-            return m.group(1).strip()
+        for sep in ["/rss/articles/", "/articles/"]:
+            if sep in url:
+                article_id = url.split(sep)[1].split("?")[0]
+                break
+        else:
+            return ""
+        pad     = (4 - len(article_id) % 4) % 4
+        decoded = base64.urlsafe_b64decode(article_id + "=" * pad)
+        # The publisher URL is embedded as a UTF-8 string in the binary data
+        for i in range(len(decoded) - 4):
+            if decoded[i:i+4] == b"http":
+                raw = decoded[i:].decode("latin-1", errors="replace")
+                # URL ends at first control character or null byte
+                end = len(raw)
+                for j, ch in enumerate(raw):
+                    if ord(ch) < 32:
+                        end = j
+                        break
+                candidate = raw[:end].strip()
+                if len(candidate) > 20 and "." in candidate and "google.com" not in candidate:
+                    return candidate
     except Exception:
         pass
-    return url
+    return ""
 
 
 def fetch_og_image(url, timeout=6):
-    """Fetch og:image from article URL, resolving Google News redirects first."""
+    """Fetch og:image from a news article URL.
+    For Google News URLs, decodes the article ID to get the publisher URL directly.
+    """
     if not url:
         return ""
     try:
         import requests as _req
-        actual = resolve_url(url, timeout=4)
+        # Resolve Google News URLs to the actual publisher URL
+        actual = url
+        if "google.com" in url:
+            decoded = decode_google_news_url(url)
+            if decoded:
+                actual = decoded
+                print(f"  Decoded Google URL -> {actual[:60]}")
+            else:
+                # Fallback: follow redirects with requests
+                try:
+                    r = _req.head(url, headers=BROWSER_HEADERS, allow_redirects=True, timeout=4)
+                    if "google.com" not in r.url:
+                        actual = r.url
+                except Exception:
+                    pass
         resp = _req.get(actual, headers=BROWSER_HEADERS, timeout=timeout, stream=True)
         html = b""
         for chunk in resp.iter_content(4096):
             html += chunk
-            if len(html) >= 20000: break
+            if len(html) >= 25000: break
         html = html.decode("utf-8", errors="ignore")
+        # Build patterns without embedding quotes in the regex
         dq, sq = chr(34), chr(39)
         q  = "[" + dq + sq + "]"
         nq = "[^" + dq + sq + "]"
-        p1 = re.compile("<meta[^>]+property=" + q + "og:image" + q + "[^>]+content=" + q + "(" + nq + "+)" + q, re.I)
-        p2 = re.compile("<meta[^>]+content=" + q + "(" + nq + "+)" + q + "[^>]+property=" + q + "og:image" + q, re.I)
+        p1 = re.compile("<meta[^>]+property=" + q + "og:image" + q + r"[^>]+content=" + q + "(" + nq + r"+)" + q, re.I)
+        p2 = re.compile("<meta[^>]+content=" + q + "(" + nq + r"+)" + q + r"[^>]+property=" + q + "og:image" + q, re.I)
         for pat in (p1, p2):
             m = pat.search(html)
-            if m and m.group(1).strip().startswith("http"):
-                return m.group(1).strip()
+            if m:
+                img = m.group(1).strip()
+                if img.startswith("http"):
+                    print(f"  Got image: {img[:60]}")
+                    return img
+        print(f"  No og:image found at {actual[:60]}")
     except Exception as e:
-        print(f"  og:image failed ({str(url)[:60]}): {e}")
+        print(f"  og:image error ({str(url)[:50]}): {e}")
     return ""
 
 
