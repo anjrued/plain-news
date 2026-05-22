@@ -18,7 +18,7 @@ body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--t
 header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); }
 .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 28px; }
 .wordmark { font-family: "Fraunces", serif; font-size: 22px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; flex-shrink: 0; }
-.category-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.category-nav { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%); mask-image: linear-gradient(to right, black 80%, transparent 100%); }
 .category-nav::-webkit-scrollbar { display: none; }
 .cat-btn { background: none; border: none; padding: 6px 13px; border-radius: 20px; font-family: "DM Sans", sans-serif; font-size: 13px; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
 .cat-btn:hover { background: var(--bg-secondary); color: var(--text); }
