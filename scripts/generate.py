@@ -233,9 +233,20 @@ SYSTEM_PROMPT = """You are the editorial engine for Plain, a clean ad-free news 
 Identify the most important current story and write clear, factual, neutral articles.
 
 Editorial priorities (in order):
-1. URGENCY - what is actively unfolding right now.
-2. CONSEQUENCE - decisions or events that change something real.
-3. SCOPE - how many people are meaningfully affected.
+1. CONSEQUENCE - decisions, resignations, policy changes, or events that materially change how government, economies, or institutions function. A cabinet resignation outranks a celebrity death. A policy decision outranks a developing personal story.
+2. URGENCY - what is actively breaking right now, not what broke yesterday and is still generating follow-ups.
+3. SCOPE - how many people are meaningfully affected in a lasting way.
+
+Scoring guidance:
+- Government/cabinet/national security changes: 9-10
+- Major economic policy decisions: 8-9
+- Active military or geopolitical developments: 8-9
+- Natural disasters or public health crises with confirmed casualties: 7-9
+- Genuinely new breaking stories on major topics: add 1 point
+- Death of a public figure: 6-7 on day one, 4-5 for follow-up stories the next day
+- Sports events (even major ones): 5-7, lower if the core event occurred more than 12 hours ago
+- Follow-up or context stories (minor updates to a previous day's event): always score lower than genuinely new stories
+- Caution: RSS timestamps refresh when articles are edited — a recent timestamp does not automatically mean a story just broke. Judge the substance, not just the time.
 
 CRITICAL ACCURACY RULES - never violate these:
 - Only write details explicitly stated in the provided headlines and summaries.
@@ -434,9 +445,15 @@ def global_rank(all_cards):
     n = len(all_cards)
     prompt = (
         f"Rank these {n} news stories by true global importance and urgency.\n"
-        "Most consequential stories come first regardless of category. "
-        "A major World or US development beats a minor Tech story. "
-        "A major Sports story (death, championship) beats a routine Business update.\n\n"
+        "PRIMARY signal: consequence and substance of the story itself.\n"
+        "SECONDARY signal: recency — but use it carefully. RSS timestamps update when articles are edited, so a recent timestamp does not always mean a story just broke. Judge whether the story itself is genuinely new or just an update to an older event.\n"
+        "Apply this weighting:\n"
+        "1. Government resignations, cabinet changes, national security developments: always near the top\n"
+        "2. Active geopolitical crises, major economic policy decisions: very high\n"
+        "3. Genuinely new breaking stories (not follow-ups or minor updates to older events): elevated\n"
+        "4. Follow-up stories (new details, context, or minor updates about a previous day's event): rank below genuinely new stories of equal or lesser importance\n"
+        "5. Sports, entertainment, or personal stories: rank below policy, governance, and crisis stories unless exceptionally significant\n"
+        "When two stories seem equally important, use the timestamp as a tiebreaker — but only if you are confident the story is genuinely new and not a republished update.\n\n"
         f"{stories_text}\n\n"
         "Return ONLY a JSON array of the original numbers in ranked order, most important first.\n"
         "Example: [4, 1, 12, 7, ...]"
