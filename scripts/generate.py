@@ -244,7 +244,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 seen.add(title.lower())
                 entries.append({
                     "title":     title,
-                    "summary":   entry.get("summary", entry.get("description", ""))[:800],
+                    "summary":   entry.get("summary", entry.get("description", ""))[:400],
                     "link":      extract_publisher_url(entry),
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
@@ -281,13 +281,11 @@ Scoring guidance:
 CRITICAL ACCURACY RULES - never violate these:
 - Only write details explicitly stated in the provided headlines and summaries.
 - Never speculate, infer, or invent causes, circumstances, or details not in the source.
-- If a detail is not in the source material, omit it completely. Do not reference its absence in any way.
-- NEVER write phrases like: 'details have not been confirmed', 'no official statement has been released',
-  'it remains unclear', 'has not been announced', 'has not responded', 'no further details available',
-  'reporting is ongoing', 'it is unknown at this time', or any similar absence language.
-  These phrases are themselves unverified claims and violate accuracy rules.
-- Never fabricate quotes, statistics, names, or events not in the source material.
-- Write what is confirmed. Stop when you run out. The article length naturally reflects what is known.
+- If a detail is not in the source, omit it completely. Do not reference its absence in any way.
+- NEVER write phrases like: "details have not been confirmed", "no official statement", "it remains unclear",
+  "has not been announced", "reporting is ongoing" — these are unverified claims.
+- Never fabricate quotes, statistics, names, or events not present in the source material.
+- Write what is confirmed. Stop there. Do not comment on what is missing.
 
 TEMPORAL ACCURACY RULES - always apply these:
 - Pay close attention to when events occurred. Use past tense for events that have already happened.
@@ -304,7 +302,7 @@ def generate_category_content(category_key, category_label, headlines):
     def hl_line(i, h):
         pub = h.get("published", "")
         pub_str = f" [pub:{pub}]" if pub else ""
-        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:500]}"
+        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:200]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
 
     prompt = f"""Here are the current top headlines for the {category_label} category:
@@ -314,7 +312,7 @@ def generate_category_content(category_key, category_label, headlines):
 Tasks:
 1. Identify the single most important/urgent story.
 2. Write a headline that accurately reflects the current state of the story. If the story is an update to a previous event, the headline should reflect that (e.g. "New Details Emerge in Kyle Busch Death" or "Kyle Busch Found Unresponsive Before Death"). Never write a headline that makes a past event sound like it is happening now.
-3. Write a factual article for the hero position. Target 420-480 words when the summaries provide sufficient detail. If the summaries are brief, write fewer words rather than padding with speculation — accuracy matters more than length. You may provide general factual context (who someone is, what an organisation does) but never invent specific details like causes, reasons, quotes, or outcomes that are not in the source.
+3. Write a 420-480 word factual article for the hero position.
 4. For the next {CARDS_PER_CATEGORY} most important stories write:
    - teaser: one sentence card preview
    - body: two short paragraphs (~120 words) expanding on the story
@@ -380,46 +378,6 @@ Return ONLY valid JSON:
     for card in data.get("cards", []):
         attach_source(card, headlines)
 
-    # Age-based score decay — penalise stories older than 24 hours
-    def decay_score(item):
-        score = item.get("urgency_score", 5)
-        pub_raw = ""
-        # Try to get raw published from the source headline
-        idx = item.get("source_index")
-        if idx is not None:
-            try:
-                pub_raw = headlines[int(idx) - 1].get("published", "")
-            except (IndexError, ValueError, TypeError):
-                pass
-        if pub_raw:
-            try:
-                from email.utils import parsedate_to_datetime
-                from datetime import timezone
-                import re as _re
-                dt  = parsedate_to_datetime(pub_raw).astimezone(timezone.utc)
-                now = datetime.now(timezone.utc)
-                hrs = (now - dt).total_seconds() / 3600
-                # Check if headline contains genuine new development keywords
-                headline = item.get('headline', '').lower()
-                update_words = ['confirms', 'confirmed', 'announces', 'announced', 'reveals',
-                                'charges', 'arrested', 'resigns', 'fired', 'dies', 'dead',
-                                'breaks', 'exclusive', 'update', 'new details']
-                is_genuine_update = any(w in headline for w in update_words)
-                # Only decay if it looks like a follow-up, not a genuine new development
-                if not is_genuine_update:
-                    if hrs > 48:
-                        score = min(score, 4)   # stale follow-up 2+ days: cap at 4
-                    elif hrs > 24:
-                        score = min(score, 6)   # stale follow-up 1-2 days: cap at 6
-            except Exception:
-                pass
-        item["urgency_score"] = score
-        return item
-
-    data["hero"] = decay_score(data["hero"])
-    for card in data.get("cards", []):
-        decay_score(card)
-
     return data
 
 
@@ -441,9 +399,7 @@ def make_paragraphs(text):
 
 
 def fetch_article_text(url, max_words=900):
-    """Fetch full article text using Anthropic web_fetch tool.
-    Handles Google News URLs, redirects, and paywalls via Anthropic infrastructure.
-    """
+    """Fetch full article text using Anthropic web_fetch tool."""
     if not url:
         print("  Article fetch skipped: no URL")
         return ""
@@ -463,18 +419,18 @@ def fetch_article_text(url, max_words=900):
             }],
             extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
         )
-        # Collect all text blocks
         text = " ".join(
             block.text for block in response.content
             if hasattr(block, "text") and block.text and len(block.text) > 50
         ).strip()
+        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source",
+                        "could not retrieve", "i cannot rewrite", "not able to", "too long",
+                        "url you provided", "no article", "cannot create", "need you to provide"]
+        if any(s in text.lower()[:300] for s in error_signals):
+            print("  Article fetch: got error response, skipping")
+            return ""
         if not text or len(text.split()) < 100:
             print(f"  Article fetch: not enough content ({len(text.split())} words)")
-            return ""
-        # Reject error messages from the fetch tool
-        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source", "error message", "could not retrieve", "i cannot rewrite", "not able to", "too long", "url you provided", "no article", "cannot create", "need you to provide", "no source article provided"]
-        if any(signal in text.lower()[:300] for signal in error_signals):
-            print(f"  Article fetch: got error message instead of article, skipping")
             return ""
         words = text.split()
         if len(words) > max_words:
@@ -485,42 +441,18 @@ def fetch_article_text(url, max_words=900):
         print(f"  Article fetch failed: {e}")
         return ""
 
-def gather_related_summaries(hero_headline, hero_index, headlines):
-    stops = {"that","this","with","from","have","been","said","will","more","also","when","were","they","their","about"}
-    def tokens(text):
-        import re as _re
-        return set(_re.sub(r'[^a-z0-9 ]', ' ', text.lower()).split()) - stops
-    hero_tokens = tokens(hero_headline)
-    combined = []
-    for i, h in enumerate(headlines):
-        entry_text = h.get("title","") + " " + h.get("summary","")
-        if i == hero_index:
-            combined.insert(0, entry_text)
-            continue
-        if len(hero_tokens & tokens(h.get("title",""))) >= 2:
-            combined.append(entry_text)
-    sep = chr(10) + chr(10)
-    return sep.join(combined[:6])
-
 
 def enhance_hero_article(hero, full_text):
     """Rewrite the hero article using the full source text for accuracy and detail."""
     if not full_text or len(full_text.split()) < 150:
-        return hero
-    # Second guard — reject if the text looks like a fetch error
-    error_signals = ["cannot fetch", "unable to access", "cannot access", "no source article", "error message", "could not retrieve", "i cannot rewrite", "not able to", "google news redirect", "too long", "url you provided", "no article", "cannot create", "need you to provide", "no source article provided"]
-    if any(signal in full_text.lower()[:400] for signal in error_signals):
-        print(f"  Enhancement skipped: text appears to be an error message")
-        return hero
+        return hero  # Not enough text to improve on
     body = hero.get("body", "")
     prompt = (
         f"You wrote this article:\n\n{body}\n\n"
         f"Here is the full source article:\n\n{full_text}\n\n"
-        "Rewrite your article using ONLY facts, quotes, and details explicitly present in the source article above. "
-        "Do not add anything not in the source. Do not speculate or infer. "
-        "If the source confirms a specific detail (cause of death, reason for resignation, etc.) include it. "
-        "If a detail is not in the source, omit it entirely — do not mention its absence. "
-        "Write 420-480 words. Plain direct English. No em dashes."
+        "Rewrite and improve your article using the full source text. "
+        "Add specific quotes, exact figures, names, and context that were missing. "
+        "Keep it 420-480 words. Plain direct English. No em dashes. No jargon."
     )
     try:
         resp = client.messages.create(
@@ -839,20 +771,10 @@ def main():
             img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
             data["hero"]["image_url"] = img
 
-            # Full article enrichment
-            # Step 1: gather related RSS summaries as fallback context
-            hero_idx = data["hero"].get("source_index", 1) - 1
-            related  = gather_related_summaries(data["hero"]["headline"], hero_idx, headlines)
-
-            # Step 2: try full article fetch
+            # Full article text — fetch and enhance hero
             article_url = data["hero"].get("link", "")
             full_text   = fetch_article_text(article_url)
-
-            # Step 3: only enhance if fetch returned meaningful content (150+ words)
-            if full_text and len(full_text.split()) >= 150:
-                data["hero"] = enhance_hero_article(data["hero"], full_text)
-            else:
-                print(f"  Using base article (fetch returned {len(full_text.split()) if full_text else 0} words)")
+            data["hero"] = enhance_hero_article(data["hero"], full_text)
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
