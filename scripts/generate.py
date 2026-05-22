@@ -581,6 +581,20 @@ def render_index(all_categories):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <meta name="description" content="News without the noise. Updated every hour. No ads. No agenda. Always free.">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://plainnews.app">
+  <meta property="og:title" content="Plain — News without the noise">
+  <meta property="og:description" content="Updated every hour. No ads. No paywalls. No agenda. Just the news that matters.">
+  <meta property="og:image" content="https://plainnews.app/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Plain — News without the noise">
+  <meta name="twitter:description" content="Updated every hour. No ads. No paywalls. No agenda. Just the news that matters.">
+  <meta name="twitter:image" content="https://plainnews.app/social-card.png">
   <link rel="stylesheet" href="style.css?v={datetime.utcnow().strftime('%Y%m%d%H')}">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-GZ5F591SL0"></script>
