@@ -80,6 +80,9 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
         hero.style.display = hero.dataset.catHero === cat ? "block" : "none";
       });
 
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
       // Filter article cards (skip support card)
       document.querySelectorAll(".article-card").forEach(card => {
         if (card.classList.contains("support-card")) return;
