@@ -51,6 +51,29 @@ function collapseThis(collapseBtn) {
   if (foot)    foot.style.display    = "";
 }
 
+  if (isOpen) {
+    expand.classList.remove("open");
+    if (summary) summary.style.display = "";
+    if (foot)    foot.style.display    = "";
+  } else {
+    expand.classList.add("open");
+    if (summary) summary.style.display = "none";
+    if (foot)    foot.style.display    = "none";
+    setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  }
+}
+
+function collapseThis(collapseBtn) {
+  const container = collapseBtn.closest(".hero, .article-card");
+  const expand    = container.querySelector(".article-expand");
+  const summary   = container.querySelector(".hero-summary, .card-summary");
+  const foot      = container.querySelector(".hero-foot, .card-foot");
+
+  expand.classList.remove("open");
+  if (summary) summary.style.display = "";
+  if (foot)    foot.style.display    = "";
+}
+
 // -- CATEGORY FILTER --
 document.querySelectorAll(".cat-btn").forEach(btn => {
   btn.addEventListener("click", () => {
