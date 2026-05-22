@@ -344,24 +344,21 @@ def render_index(all_categories):
         paragraphs = make_paragraphs(hero["body"])
         img_url    = hero.get("image_url", "")
         img_html   = f'<img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">' if img_url else ""
-        wrap_class = "hero-inner hero-inner--split" if img_url else "hero-inner"
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
-      <div class="{wrap_class}">
-        <div class="hero-content">
-          <span class="tag">{cat_label}</span>
-          <h1>{hero["headline"]}</h1>
-          <p class="hero-summary">{preview}...</p>
-          <div class="hero-foot">
-            <span class="meta">Today, {timestamp}</span>
-            <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
-          </div>
-          <div class="article-expand hero-expand">
-            <div class="hero-expand-body">{paragraphs}</div>
-            <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
-          </div>
-        </div>
+      <div class="hero-inner">
         {img_html}
+        <span class="tag">{cat_label}</span>
+        <h1>{hero["headline"]}</h1>
+        <p class="hero-summary">{preview}...</p>
+        <div class="hero-foot">
+          <span class="meta">Today, {timestamp}</span>
+          <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
+        </div>
+        <div class="article-expand hero-expand">
+          <div class="hero-expand-body">{paragraphs}</div>
+          <button class="collapse-btn" onclick="collapseThis(this)">Close &uarr;</button>
+        </div>
       </div>
     </section>"""
 
