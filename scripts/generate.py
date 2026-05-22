@@ -65,6 +65,19 @@ CATEGORIES = {
 }
 
 HEADLINES_PER_CATEGORY = 12
+
+# Feeds that reliably include images in RSS — used for image matching
+IMAGE_BANK_FEEDS = [
+    "https://feeds.bbci.co.uk/news/rss.xml",
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+    "https://feeds.bbci.co.uk/sport/rss.xml",
+    "https://feeds.arstechnica.com/arstechnica/index",
+    "https://techcrunch.com/feed/",
+    "https://www.espn.com/espn/rss/news",
+]
 CARDS_PER_CATEGORY     = 5
 OUTPUT_DIR             = Path(__file__).parent.parent
 
@@ -114,89 +127,36 @@ def extract_image(entry):
     return ""
 
 
-BROWSER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-}
+def build_image_bank():
+    """Fetch images from RSS feeds that reliably include them (BBC, ESPN, TechCrunch)."""
+    bank = []
+    for url in IMAGE_BANK_FEEDS:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:20]:
+                title = entry.get("title", "").strip()
+                img   = extract_image(entry)
+                if title and img:
+                    bank.append({"title": title, "image_url": img})
+        except Exception as e:
+            print(f"  Image bank feed error ({url[:50]}): {e}")
+    print(f"  Image bank built: {len(bank)} entries with images")
+    return bank
 
 
-def decode_google_news_url(url):
-    """Decode a Google News RSS article URL to get the actual publisher URL.
-    The article ID is base64-encoded and contains the source URL embedded in it.
-    """
-    import base64
-    try:
-        for sep in ["/rss/articles/", "/articles/"]:
-            if sep in url:
-                article_id = url.split(sep)[1].split("?")[0]
-                break
-        else:
-            return ""
-        pad     = (4 - len(article_id) % 4) % 4
-        decoded = base64.urlsafe_b64decode(article_id + "=" * pad)
-        # The publisher URL is embedded as a UTF-8 string in the binary data
-        for i in range(len(decoded) - 4):
-            if decoded[i:i+4] == b"http":
-                raw = decoded[i:].decode("latin-1", errors="replace")
-                # URL ends at first control character or null byte
-                end = len(raw)
-                for j, ch in enumerate(raw):
-                    if ord(ch) < 32:
-                        end = j
-                        break
-                candidate = raw[:end].strip()
-                if len(candidate) > 20 and "." in candidate and "google.com" not in candidate:
-                    return candidate
-    except Exception:
-        pass
-    return ""
-
-
-def fetch_og_image(url, timeout=6):
-    """Fetch og:image from a news article URL.
-    For Google News URLs, decodes the article ID to get the publisher URL directly.
-    """
-    if not url:
-        return ""
-    try:
-        import requests as _req
-        # Resolve Google News URLs to the actual publisher URL
-        actual = url
-        if "google.com" in url:
-            decoded = decode_google_news_url(url)
-            if decoded:
-                actual = decoded
-                print(f"  Decoded Google URL -> {actual[:60]}")
-            else:
-                # Fallback: follow redirects with requests
-                try:
-                    r = _req.head(url, headers=BROWSER_HEADERS, allow_redirects=True, timeout=4)
-                    if "google.com" not in r.url:
-                        actual = r.url
-                except Exception:
-                    pass
-        resp = _req.get(actual, headers=BROWSER_HEADERS, timeout=timeout, stream=True)
-        html = b""
-        for chunk in resp.iter_content(4096):
-            html += chunk
-            if len(html) >= 25000: break
-        html = html.decode("utf-8", errors="ignore")
-        # Build patterns without embedding quotes in the regex
-        dq, sq = chr(34), chr(39)
-        q  = "[" + dq + sq + "]"
-        nq = "[^" + dq + sq + "]"
-        p1 = re.compile("<meta[^>]+property=" + q + "og:image" + q + r"[^>]+content=" + q + "(" + nq + r"+)" + q, re.I)
-        p2 = re.compile("<meta[^>]+content=" + q + "(" + nq + r"+)" + q + r"[^>]+property=" + q + "og:image" + q, re.I)
-        for pat in (p1, p2):
-            m = pat.search(html)
-            if m:
-                img = m.group(1).strip()
-                if img.startswith("http"):
-                    print(f"  Got image: {img[:60]}")
-                    return img
-        print(f"  No og:image found at {actual[:60]}")
-    except Exception as e:
-        print(f"  og:image error ({str(url)[:50]}): {e}")
-    return ""
+def match_image(headline, image_bank):
+    """Fuzzy-match a headline against the image bank. Returns best matching image URL."""
+    stops = {"that","this","with","from","have","been","after","over","into","says","said","will","than","more","also","when","were","they","their","about"}
+    def tokens(text):
+        return set(w.lower().strip(".,;:()") for w in text.split() if len(w) > 3 and w.lower() not in stops)
+    hw = tokens(headline)
+    best_score, best_img = 0, ""
+    for entry in image_bank:
+        overlap = len(hw & tokens(entry["title"]))
+        if overlap > best_score and overlap >= 2:
+            best_score = overlap
+            best_img   = entry["image_url"]
+    return best_img
 
 
 def find_image(headline, entries):
@@ -407,8 +367,10 @@ def render_index(all_categories):
     all_cards = []
     top_cat_key = top_cat["category_key"]
 
-    # Add category hero stories into the pool — they deserve to rank with everything
+    # Add category heroes to pool — skip top_cat (already shown as the All hero above)
     for cat in all_categories:
+        if cat["category_key"] == top_cat_key:
+            continue
         hero = cat["hero"]
         all_cards.append({
             "headline":      hero["headline"],
@@ -419,8 +381,7 @@ def render_index(all_categories):
             "cat_key":       cat["category_key"],
             "cat_label":     cat["category_label"],
             "is_hero":       True,
-            # Mark the story that is also the "all" hero so we can hide it in the All grid
-            "is_all_hero":   cat["category_key"] == top_cat_key,
+            "is_all_hero":   False,
         })
 
     # Add regular cards
@@ -554,8 +515,12 @@ def slug(text):
 # -- MAIN --
 
 def main():
-    timestamp     = now_et()
+    timestamp      = now_et()
     all_categories = []
+
+    # Build image bank once — fetches from BBC/ESPN/TechCrunch which include images in RSS
+    print("Building image bank...")
+    image_bank = build_image_bank()
 
     for cat_key, cat_config in CATEGORIES.items():
         print(f"Processing: {cat_config['label']}...")
@@ -565,16 +530,16 @@ def main():
             continue
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
-            # Attach images — try RSS first, fall back to og:image fetch for hero
+
+            # Images: try RSS match first, then image bank fuzzy match
             hero_match = find_image(data["hero"]["headline"], headlines)
-            img = hero_match["image_url"]
-            if not img:
-                print(f"  No RSS image for hero, fetching og:image...")
-                img = fetch_og_image(hero_match["link"])
+            img = hero_match["image_url"] or match_image(data["hero"]["headline"], image_bank)
             data["hero"]["image_url"] = img
+
             for card in data["cards"]:
                 card_match = find_image(card["headline"], headlines)
-                card["image_url"] = card_match["image_url"] or fetch_og_image(card_match["link"])
+                card["image_url"] = card_match["image_url"] or match_image(card["headline"], image_bank)
+
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
         except Exception as e:
