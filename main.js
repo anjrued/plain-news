@@ -57,14 +57,13 @@ function collapseThis(collapseBtn) {
   if (btn)     btn.innerHTML = "Continue reading &darr;";
 }
 
-// Make entire card clickable — but not when clicking a button or expanded content
+// Make entire card clickable to toggle expand/collapse
 document.addEventListener("click", e => {
   const card = e.target.closest(".article-card");
   if (!card) return;
   if (card.classList.contains("support-card")) return;
-  if (e.target.closest(".article-expand")) return;  // clicking inside expanded content
-  if (e.target.closest(".collapse-btn")) return;    // collapse button handles itself
-  if (e.target.closest(".expand-btn")) return;      // expand button handles itself
+  if (e.target.closest(".collapse-btn")) return;  // collapse button handles itself
+  if (e.target.closest(".expand-btn")) return;    // expand button handles itself
   expandContainer(card);
 });
 
