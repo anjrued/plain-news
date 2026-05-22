@@ -114,14 +114,35 @@ def extract_image(entry):
     return ""
 
 
+def fetch_og_image(url, timeout=5):
+    """Fetch og:image from article URL. Used for hero images when RSS has none."""
+    if not url:
+        return ""
+    try:
+        import urllib.request as _ur
+        req = _ur.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; PlainNews/1.0)"})
+        with _ur.urlopen(req, timeout=timeout) as r:
+            html = r.read(15000).decode("utf-8", errors="ignore")
+        for pattern in [
+            r'<meta[^>]+property=["\'\']og:image["\'\'][^>]+content=["\'\']([^\"\'\']+)["\'\']>',
+            r'<meta[^>]+content=["\'\']([^\"\'\']+)["\'\'][^>]+property=["\'\']og:image["\'\']>',
+        ]:
+            m = re.search(pattern, html)
+            if m and m.group(1).startswith("http"):
+                return m.group(1)
+    except Exception:
+        pass
+    return ""
+
+
 def find_image(headline, entries):
-    """Match Claude's chosen headline back to its RSS entry to retrieve the image."""
+    """Match headline back to RSS entry for image and link."""
     h = headline.lower()[:50]
     for entry in entries:
         t = entry.get("title", "").lower()[:50]
         if h in t or t in h:
-            return entry.get("image_url", "")
-    return ""
+            return {"image_url": entry.get("image_url", ""), "link": entry.get("link", "")}
+    return {"image_url": "", "link": ""}
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
@@ -137,6 +158,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 entries.append({
                     "title":     title,
                     "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "link":      entry.get("link", ""),
                     "image_url": extract_image(entry),
                 })
         except Exception as e:
@@ -404,12 +426,18 @@ def main():
             continue
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
-            # Attach images by matching headlines back to RSS entries
-            data["hero"]["image_url"] = find_image(data["hero"]["headline"], headlines)
+            # Attach images — try RSS first, fall back to og:image fetch for hero
+            hero_match = find_image(data["hero"]["headline"], headlines)
+            img = hero_match["image_url"]
+            if not img:
+                print(f"  No RSS image for hero, fetching og:image...")
+                img = fetch_og_image(hero_match["link"])
+            data["hero"]["image_url"] = img
             for card in data["cards"]:
-                card["image_url"] = find_image(card["headline"], headlines)
+                card_match = find_image(card["headline"], headlines)
+                card["image_url"] = card_match["image_url"] or fetch_og_image(card_match["link"])
             all_categories.append(data)
-            print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if data['hero']['image_url'] else 'no'})")
+            print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
         except Exception as e:
             print(f"  Claude error for {cat_config['label']}: {e}")
             continue
