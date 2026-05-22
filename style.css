@@ -90,6 +90,28 @@ main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card-time { font-size: 11px; color: var(--text-muted); letter-spacing: 0.02em; }
 
+/* -- SUPPORT CARD -- */
+.support-card { background: var(--accent) !important; cursor: default; }
+.support-card:hover { background: var(--accent) !important; opacity: 0.95; }
+.support-card-tag { color: rgba(255,255,255,0.7) !important; }
+.support-card-headline { color: white !important; font-size: 20px !important; }
+.support-card .card-summary { color: rgba(255,255,255,0.85) !important; }
+.support-card-btn {
+  display: inline-block;
+  background: white;
+  color: var(--accent);
+  border: none;
+  padding: 9px 20px;
+  border-radius: 20px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.support-card-btn:hover { opacity: 0.9; }
+
 /* -- SUPPORT BOX -- */
 .support-box { margin-top: 48px; border: 1px solid var(--border); border-radius: 10px; padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: var(--bg-secondary); }
 .support-box-text p { font-family: "Fraunces", serif; font-size: 18px; font-weight: 500; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
