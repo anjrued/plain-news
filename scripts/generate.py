@@ -167,7 +167,7 @@ def match_image(headline, image_bank):
 
 
 def find_image(headline, entries):
-    """Match headline back to RSS entry to get its image URL and source link."""
+    """Match headline back to RSS entry for image, link, and publish time."""
     h = headline.lower()[:50]
     for entry in entries:
         t = entry.get("title", "").lower()[:50]
@@ -175,8 +175,9 @@ def find_image(headline, entries):
             return {
                 "image_url": entry.get("image_url", ""),
                 "link":      entry.get("link", ""),
+                "published": entry.get("published", ""),
             }
-    return {"image_url": "", "link": ""}
+    return {"image_url": "", "link": "", "published": ""}
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
@@ -195,6 +196,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                     "summary":   entry.get("summary", entry.get("description", ""))[:400],
                     "link":      entry.get("link", ""),
                     "image_url": extract_image(entry),
+                    "published": entry.get("published", ""),
                 })
                 if len(entries) >= limit:
                     break
@@ -344,6 +346,30 @@ def enhance_hero_article(hero, full_text):
     return hero
 
 
+def format_age(published_str):
+    """Format publish time: minutes ago if fresh, actual time otherwise."""
+    if not published_str:
+        return ""
+    try:
+        from email.utils import parsedate_to_datetime
+        import pytz
+        et      = pytz.timezone("America/New_York")
+        dt_utc  = parsedate_to_datetime(published_str).astimezone(pytz.utc)
+        now_utc = datetime.now(pytz.utc)
+        mins    = int((now_utc - dt_utc).total_seconds() / 60)
+        dt_et   = dt_utc.astimezone(et)
+        time_str = dt_et.strftime("%-I:%M %p ET")
+        if mins < 60:
+            return "A few minutes ago"
+        if dt_et.date() == now_utc.astimezone(et).date():
+            return time_str
+        if mins < 2880:
+            return f"Yesterday, {time_str}"
+        return dt_et.strftime("%b %-d, ") + time_str
+    except Exception:
+        return ""
+
+
 def global_rank(all_cards):
     """Final global ranking — sends all headlines to Claude for true cross-category ordering."""
     if not all_cards:
@@ -402,6 +428,7 @@ def render_index(all_categories):
         paragraphs = make_paragraphs(hero["body"])
         img_url    = hero.get("image_url", "")
         img_html   = f'<img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">' if img_url else ""
+        pub_time   = hero.get("published") or f"Today, {timestamp}"
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
       <div class="hero-inner">
@@ -410,7 +437,7 @@ def render_index(all_categories):
         <h1>{hero["headline"]}</h1>
         <p class="hero-summary">{preview}...</p>
         <div class="hero-foot">
-          <span class="meta">Today, {timestamp}</span>
+          <span class="meta">{pub_time}</span>
           <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
         </div>
         <div class="article-expand hero-expand">
@@ -462,8 +489,9 @@ def render_index(all_categories):
         teaser = card.get("teaser", card.get("summary", ""))
         body   = card.get("body", card.get("summary", ""))
         card_paragraphs = make_paragraphs(body)
-        ck               = card["cat_key"]
-        cl               = card["cat_label"]
+        ck        = card["cat_key"]
+        cl        = card["cat_label"]
+        card_time = card.get("published") or timestamp
         is_hero_attr = ' data-is-hero="true"' if card.get("is_hero") else ""
         cards_html += f"""
       <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}>
@@ -471,7 +499,7 @@ def render_index(all_categories):
         <h2 class="card-headline">{card["headline"]}</h2>
         <p class="card-summary">{teaser}</p>
         <div class="card-foot">
-          <span class="card-time">{timestamp}</span>
+          <span class="card-time">{card_time}</span>
           <button class="expand-btn" onclick="toggleExpand(this)">Continue reading &darr;</button>
         </div>
         <div class="article-expand">
@@ -578,15 +606,21 @@ def main():
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
-            # Images
+            # Images and publish time
             match = find_image(data["hero"]["headline"], headlines)
             img = match["image_url"] or match_image(data["hero"]["headline"], image_bank)
             data["hero"]["image_url"] = img
+            data["hero"]["published"] = format_age(match["published"])
 
             # Full article text — fetch and enhance hero
             article_url = match["link"]
             full_text   = fetch_article_text(article_url)
             data["hero"] = enhance_hero_article(data["hero"], full_text)
+
+            # Attach publish times to cards
+            for card in data["cards"]:
+                card_match = find_image(card["headline"], headlines)
+                card["published"] = format_age(card_match["published"])
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
