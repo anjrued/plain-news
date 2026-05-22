@@ -68,15 +68,35 @@ HEADLINES_PER_CATEGORY = 12
 
 # Feeds that reliably include images in RSS — used for image matching
 IMAGE_BANK_FEEDS = [
+    # BBC (all sections)
     "https://feeds.bbci.co.uk/news/rss.xml",
     "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.bbci.co.uk/news/us-and-canada/rss.xml",
     "https://feeds.bbci.co.uk/news/business/rss.xml",
     "https://feeds.bbci.co.uk/news/technology/rss.xml",
     "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
     "https://feeds.bbci.co.uk/sport/rss.xml",
+    "https://feeds.bbci.co.uk/sport/american-football/rss.xml",
+    # The Guardian
+    "https://www.theguardian.com/world/rss",
+    "https://www.theguardian.com/us-news/rss",
+    "https://www.theguardian.com/business/rss",
+    "https://www.theguardian.com/technology/rss",
+    "https://www.theguardian.com/science/rss",
+    "https://www.theguardian.com/sport/rss",
+    # NPR
+    "https://feeds.npr.org/1001/rss.xml",
+    "https://feeds.npr.org/1004/rss.xml",
+    "https://feeds.npr.org/1006/rss.xml",
+    # Sports
+    "https://www.espn.com/espn/rss/news",
+    "https://www.cbssports.com/rss/headlines",
+    "https://feeds.bbci.co.uk/sport/formula1/rss.xml",
+    # Tech
     "https://feeds.arstechnica.com/arstechnica/index",
     "https://techcrunch.com/feed/",
-    "https://www.espn.com/espn/rss/news",
+    # Yahoo News (broad aggregator with images)
+    "https://news.yahoo.com/rss",
 ]
 CARDS_PER_CATEGORY     = 5
 OUTPUT_DIR             = Path(__file__).parent.parent
