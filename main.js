@@ -63,10 +63,12 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     });
 
     document.querySelectorAll(".article-card").forEach(card => {
-      const matchesCat = cat === "all" || card.dataset.cat === cat;
-      // Hide hero-cards in their own category — hero section already shows that story
-      const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
-      card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
+      const matchesCat    = cat === "all" || card.dataset.cat === cat;
+      // In category view: hide hero cards for that category (shown in hero section already)
+      const isDupeInCat   = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
+      // In All view: hide the card that is also the All hero (shown in hero section already)
+      const isDupeAllHero = cat === "all" && card.dataset.allHero === "true";
+      card.style.display  = (matchesCat && !isDupeInCat && !isDupeAllHero) ? "block" : "none";
     });
   });
 });
