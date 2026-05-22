@@ -63,7 +63,10 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     });
 
     document.querySelectorAll(".article-card").forEach(card => {
-      card.style.display = (cat === "all" || card.dataset.cat === cat) ? "block" : "none";
+      const matchesCat = cat === "all" || card.dataset.cat === cat;
+      // Hide hero-cards in their own category — hero section already shows that story
+      const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
+      card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
     });
   });
 });
