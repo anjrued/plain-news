@@ -350,13 +350,31 @@ def make_paragraphs(text):
 
 
 def fetch_article_text(url, max_words=900):
-    """Fetch full article text from a URL using trafilatura."""
+    """Fetch full article text, resolving Google News redirects first."""
     if not url:
+        print("  Article fetch skipped: no URL")
         return ""
     try:
         import trafilatura
-        downloaded = trafilatura.fetch_url(url)
+        import requests as _req
+
+        # Resolve Google News redirect to actual publisher URL
+        actual_url = url
+        if "news.google.com" in url:
+            try:
+                r = _req.get(url, allow_redirects=True, timeout=5,
+                             headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"})
+                if "news.google.com" not in r.url:
+                    actual_url = r.url
+                    print(f"  Resolved to: {actual_url[:70]}")
+                else:
+                    print(f"  Google redirect unresolved, trying trafilatura directly")
+            except Exception as re:
+                print(f"  Redirect resolve failed: {re}")
+
+        downloaded = trafilatura.fetch_url(actual_url)
         if not downloaded:
+            print(f"  Article fetch: no content from {actual_url[:60]}")
             return ""
         text = trafilatura.extract(
             downloaded,
@@ -365,11 +383,12 @@ def fetch_article_text(url, max_words=900):
             no_fallback=False,
         )
         if not text:
+            print(f"  Article fetch: trafilatura extracted no text")
             return ""
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words]) + "..."
-        print(f"  Fetched article: {len(words)} words")
+        print(f"  Fetched article: {len(words)} words from {actual_url[:60]}")
         return text.strip()
     except Exception as e:
         print(f"  Article fetch failed ({str(url)[:50]}): {e}")
