@@ -214,6 +214,23 @@ def find_image(headline, entries):
     return {"image_url": "", "link": "", "published": ""}
 
 
+def extract_publisher_url(entry):
+    """Extract actual publisher URL from a Google News RSS entry.
+    Google News embeds the publisher URL as an href in the description HTML.
+    Falls back to entry link for non-Google feeds.
+    """
+    link = entry.get("link", "")
+    if "news.google.com" not in link:
+        return link  # Already a direct publisher URL
+    desc = entry.get("summary", entry.get("description", ""))
+    if isinstance(desc, list):
+        desc = desc[0].get("value", "") if desc else ""
+    matches = re.findall(r'href="(https?://(?!news\.google)[^"]+)"', desc)
+    if matches:
+        return matches[0]
+    return link
+
+
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
     """Pull headlines from feeds in priority order. First feed fills most slots."""
     seen, entries = set(), []
@@ -228,7 +245,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 entries.append({
                     "title":     title,
                     "summary":   entry.get("summary", entry.get("description", ""))[:400],
-                    "link":      entry.get("link", ""),
+                    "link":      extract_publisher_url(entry),
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
                 })
@@ -380,31 +397,16 @@ def make_paragraphs(text):
 
 
 def fetch_article_text(url, max_words=900):
-    """Fetch full article text, resolving Google News redirects first."""
-    if not url:
-        print("  Article fetch skipped: no URL")
+    """Fetch full article text from a publisher URL using trafilatura."""
+    if not url or "news.google.com" in url:
+        print(f"  Article fetch skipped: {'no URL' if not url else 'unresolved Google URL'}")
         return ""
     try:
         import trafilatura
-        import requests as _req
-
-        # Resolve Google News redirect to actual publisher URL
-        actual_url = url
-        if "news.google.com" in url:
-            try:
-                r = _req.get(url, allow_redirects=True, timeout=5,
-                             headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"})
-                if "news.google.com" not in r.url:
-                    actual_url = r.url
-                    print(f"  Resolved to: {actual_url[:70]}")
-                else:
-                    print(f"  Google redirect unresolved, trying trafilatura directly")
-            except Exception as re:
-                print(f"  Redirect resolve failed: {re}")
-
-        downloaded = trafilatura.fetch_url(actual_url)
+        print(f"  Fetching article: {url[:70]}")
+        downloaded = trafilatura.fetch_url(url)
         if not downloaded:
-            print(f"  Article fetch: no content from {actual_url[:60]}")
+            print(f"  Article fetch: no content returned")
             return ""
         text = trafilatura.extract(
             downloaded,
@@ -418,10 +420,10 @@ def fetch_article_text(url, max_words=900):
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words]) + "..."
-        print(f"  Fetched article: {len(words)} words from {actual_url[:60]}")
+        print(f"  Fetched article: {len(words)} words")
         return text.strip()
     except Exception as e:
-        print(f"  Article fetch failed ({str(url)[:50]}): {e}")
+        print(f"  Article fetch failed ({url[:50]}): {e}")
         return ""
 
 
