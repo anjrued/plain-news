@@ -11,14 +11,6 @@
   --text-secondary: #8A8A82; --text-muted: #5A5A54;
   --border: #2A2A27; --accent: #E05A3A;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0F0F0E; --bg-secondary: #1C1C1A; --text: #F0F0EE;
-    --text-secondary: #8A8A82; --text-muted: #5A5A54;
-    --border: #2A2A27; --accent: #E05A3A;
-  }
-}
-
 /* -- BASE -- */
 body { font-family: "DM Sans", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; transition: background 0.2s, color 0.2s; }
 
