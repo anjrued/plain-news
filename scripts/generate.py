@@ -167,13 +167,13 @@ def match_image(headline, image_bank):
 
 
 def find_image(headline, entries):
-    """Match headline back to RSS entry for image and link."""
+    """Match headline back to RSS entry to get its image URL."""
     h = headline.lower()[:50]
     for entry in entries:
         t = entry.get("title", "").lower()[:50]
         if h in t or t in h:
-            return {"image_url": entry.get("image_url", ""), "link": entry.get("link", "")}
-    return {"image_url": "", "link": ""}
+            return entry.get("image_url", "")
+    return ""
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
@@ -190,7 +190,6 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 entries.append({
                     "title":     title,
                     "summary":   entry.get("summary", entry.get("description", ""))[:400],
-                    "link":      entry.get("link", ""),
                     "image_url": extract_image(entry),
                 })
                 if len(entries) >= limit:
@@ -388,7 +387,6 @@ def render_index(all_categories):
             "cat_key":       cat["category_key"],
             "cat_label":     cat["category_label"],
             "is_hero":       True,
-            "is_all_hero":   False,
         })
 
     # Add regular cards
@@ -409,15 +407,11 @@ def render_index(all_categories):
         teaser = card.get("teaser", card.get("summary", ""))
         body   = card.get("body", card.get("summary", ""))
         card_paragraphs = make_paragraphs(body)
-        ck       = card["cat_key"]
-        cl       = card["cat_label"]
-        img_url  = card.get("image_url", "")
-        img_tag  = f'<img class="card-image" src="{img_url}" alt="" loading="lazy">' if img_url else ""
-        is_hero_attr    = ' data-is-hero="true"' if card.get("is_hero") else ""
-        is_all_hero_attr = ' data-all-hero="true"' if card.get("is_all_hero") else ""
+        ck               = card["cat_key"]
+        cl               = card["cat_label"]
+        is_hero_attr = ' data-is-hero="true"' if card.get("is_hero") else ""
         cards_html += f"""
-      <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}{is_all_hero_attr}>
-        {img_tag}
+      <div class="article-card fade-in" data-cat="{ck}"{is_hero_attr}>
         <span class="card-tag">{cl}</span>
         <h2 class="card-headline">{card["headline"]}</h2>
         <p class="card-summary">{teaser}</p>
@@ -510,19 +504,10 @@ def render_index(all_categories):
 </html>"""
 
 
-# -- UTILITIES --
-
-def slug(text):
-    text = text.lower()
-    text = re.sub(r"[^a-z0-9\s-]", "", text)
-    text = re.sub(r"\s+", "-", text.strip())
-    return text[:80]
-
 
 # -- MAIN --
 
 def main():
-    timestamp      = now_et()
     all_categories = []
 
     # Build image bank once — fetches from BBC/ESPN/TechCrunch which include images in RSS
@@ -539,12 +524,8 @@ def main():
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
             # Images: try RSS match first, then image bank fuzzy match
-            hero_match = find_image(data["hero"]["headline"], headlines)
-            img = hero_match["image_url"] or match_image(data["hero"]["headline"], image_bank)
+            img = find_image(data["hero"]["headline"], headlines) or match_image(data["hero"]["headline"], image_bank)
             data["hero"]["image_url"] = img
-
-            for card in data["cards"]:
-                card["image_url"] = ""  # Cards text-only for consistency
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
