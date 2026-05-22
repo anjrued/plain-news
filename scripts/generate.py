@@ -291,14 +291,15 @@ Return ONLY valid JSON:
     "headline": "accurate temporally-framed headline",
     "body": "full article text with paragraph breaks",
     "urgency_score": <1-10>,
-    "published": "copy the [pub:...] string from the chosen headline exactly, including the date"
+    "published": "copy the [pub:...] string from the chosen headline exactly, including the date",
+    "source_index": <the number of the chosen headline, e.g. 3>
   }},
   "cards": [
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}},
-    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp"}}
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp", "source_index": <number>}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp", "source_index": <number>}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp", "source_index": <number>}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp", "source_index": <number>}},
+    {{"headline": "...", "teaser": "...", "body": "two paragraphs...", "urgency_score": <1-10>, "published": "copy timestamp", "source_index": <number>}}
   ]
 }}"""
 
@@ -320,14 +321,29 @@ Return ONLY valid JSON:
     data["category_key"]   = category_key
     data["category_label"] = category_label
 
-    # Format the raw published strings Claude copied back
-    raw_pub = data["hero"].get("published", "")
-    # Strip "pub:" prefix if Claude included it
-    raw_pub = raw_pub.replace("pub:", "").strip().strip("[]")
-    data["hero"]["published"] = format_age(raw_pub)
+    # Use source_index to attach original RSS link and image directly — no fuzzy matching needed
+    def attach_source(item, headlines):
+        idx = item.get("source_index")
+        if idx is not None:
+            try:
+                source = headlines[int(idx) - 1]
+                item["link"]      = source.get("link", "")
+                item["image_url"] = source.get("image_url", "")
+            except (IndexError, ValueError, TypeError):
+                item["link"]      = ""
+                item["image_url"] = ""
+        else:
+            item["link"]      = ""
+            item["image_url"] = ""
+
+        # Format published
+        raw_pub = item.get("published", "").replace("pub:", "").strip().strip("[]")
+        item["published"] = format_age(raw_pub)
+        return item
+
+    data["hero"] = attach_source(data["hero"], headlines)
     for card in data.get("cards", []):
-        raw_pub = card.get("published", "").replace("pub:", "").strip().strip("[]")
-        card["published"] = format_age(raw_pub)
+        attach_source(card, headlines)
 
     return data
 
@@ -719,13 +735,12 @@ def main():
         try:
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
-            # Images
-            match = find_image(data["hero"]["headline"], headlines)
-            img = match["image_url"] or match_image(data["hero"]["headline"], image_bank, cat_key)
+            # Images — source_index already attached image_url, fall back to image bank
+            img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
             data["hero"]["image_url"] = img
 
             # Full article text — fetch and enhance hero
-            article_url = match["link"]
+            article_url = data["hero"].get("link", "")
             full_text   = fetch_article_text(article_url)
             data["hero"] = enhance_hero_article(data["hero"], full_text)
 
