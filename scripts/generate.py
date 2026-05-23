@@ -328,7 +328,11 @@ TEMPORAL ACCURACY RULES - always apply these:
 - The article should reflect the current state of the story, not just the most dramatic moment.
 
 Avoid: sensationalism, outrage bait, celebrity news.
-Write in plain direct English. No jargon. No padding. No em dashes."""
+Write in plain direct English. No jargon. No padding. No em dashes.
+NEVER editorialize or characterize. Do not use loaded language, emotional framing, or
+value judgments. Words like "controversial", "rocky", "embattled", "slammed", "blasted",
+"marginalized", "chaotic", "failed" are editorial opinions — never use them.
+Report what happened. Let readers draw their own conclusions."""
 
 
 def generate_category_content(category_key, category_label, headlines):
