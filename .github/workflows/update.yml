@@ -19,12 +19,13 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser anthropic requests trafilatura
+        run: pip install feedparser anthropic requests
 
       - name: Generate news
         run: python scripts/generate.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GUARDIAN_API_KEY: ${{ secrets.GUARDIAN_API_KEY }}
 
       - name: Commit and push
         run: |
