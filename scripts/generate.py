@@ -694,6 +694,7 @@ def global_rank(all_cards):
 def render_index(all_categories):
     timestamp = now_et()
     top_cat   = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
+    hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
     # -- Hero sections (one per category + "all") --
     def hero_section(cat_key, cat_label, hero, visible):
@@ -805,7 +806,7 @@ def render_index(all_categories):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-  <meta name="description" content="News without the noise. Updated every hour. No ads. No agenda. Always free.">
+  <meta name="description" content="Plain: {hero_desc} — Updated every hour. No ads. No agenda. Always free.">
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://plainnews.app">
