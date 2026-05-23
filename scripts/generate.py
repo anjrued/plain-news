@@ -939,8 +939,15 @@ def main():
             source_text  = "\n\n".join(source_parts)
 
             if source_text and len(source_text.split()) >= 100:
-                data["hero"] = enhance_hero_article(data["hero"], source_text)
-                print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
+                # Final relevance check — ensure source actually relates to hero headline
+                stops2 = {"the","a","an","in","of","for","to","and","or","on","at","is","was","are","were","that","this","with"}
+                hl_tok = set(re.sub(r"[^a-z0-9 ]", " ", hero_headline.lower()).split()) - stops2
+                src_tok = set(re.sub(r"[^a-z0-9 ]", " ", source_text[:500].lower()).split()) - stops2
+                if len(hl_tok & src_tok) >= 3:
+                    data["hero"] = enhance_hero_article(data["hero"], source_text)
+                    print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
+                else:
+                    print(f"  Enhancement skipped: source text not relevant to headline")
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
