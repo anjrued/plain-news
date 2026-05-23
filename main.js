@@ -108,48 +108,6 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
   });
 });
 
-// -- MARKET TICKER --
-async function loadMarkets() {
-  const symbols = [
-    { id: "ticker-sp500",  sym: "^GSPC",  label: "S&P 500" },
-    { id: "ticker-dow",    sym: "^DJI",   label: "DOW"     },
-    { id: "ticker-nasdaq", sym: "^IXIC",  label: "NASDAQ"  },
-    { id: "ticker-oil",    sym: "CL=F",   label: "Oil"     },
-  ];
-
-  let anyLive = false;
-
-  for (const t of symbols) {
-    try {
-      const encoded = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.sym)}?interval=1d&range=1d`);
-      const url     = `https://api.allorigins.win/get?url=${encoded}`;
-      const resp    = await fetch(url);
-      const outer   = await resp.json();
-      const data    = JSON.parse(outer.contents);
-      const meta    = data?.chart?.result?.[0]?.meta;
-      if (!meta) continue;
-
-      const price  = meta.regularMarketPrice;
-      const prev   = meta.previousClose || meta.chartPreviousClose;
-      const change = ((price - prev) / prev * 100);
-      const sign   = change >= 0 ? "+" : "";
-      const cls    = change >= 0 ? "ticker-up" : "ticker-down";
-      const isLive = meta.marketState === "REGULAR";
-      if (isLive) anyLive = true;
-
-      const el = document.getElementById(t.id);
-      if (el) {
-        el.querySelector(".ticker-val").innerHTML =
-          `${price.toLocaleString("en-US", {maximumFractionDigits: 2})} <span class="${cls}">${sign}${change.toFixed(2)}%</span>`;
-      }
-    } catch(e) { /* silently skip */ }
-  }
-
-  const closedEl = document.getElementById("ticker-closed");
-  if (closedEl) closedEl.style.display = anyLive ? "none" : "inline";
-}
-loadMarkets();
-
 // -- COUNTDOWN --
 function updateCountdown() {
   const now = new Date(), next = new Date(now);
