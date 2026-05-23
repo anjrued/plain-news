@@ -504,7 +504,10 @@ def find_content(headline, content_bank, max_entries=5):
         return ""
     parts = []
     for _, entry in matches[:max_entries]:
-        parts.append(f"[{entry["source"]}] {entry["title"]}\n{entry["summary"]}")
+        src     = entry["source"]
+        title   = entry["title"]
+        summary = entry["summary"]
+        parts.append(f"[{src}] {title}\n{summary}")
     return "\n\n".join(parts)
 
 
