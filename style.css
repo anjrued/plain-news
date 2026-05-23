@@ -33,6 +33,43 @@ header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-b
 .update-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 7px 24px; text-align: center; font-size: 12px; color: var(--text-muted); letter-spacing: 0.02em; }
 .update-bar strong { color: var(--accent); font-weight: 500; }
 
+/* -- MARKET TICKER -- */
+.market-ticker {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 24px;
+  overflow: hidden;
+}
+.ticker-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ticker-inner::-webkit-scrollbar { display: none; }
+.ticker-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.ticker-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ticker-val { font-weight: 500; color: var(--text); }
+.ticker-up   { color: #2d9d5c; }
+.ticker-down { color: var(--accent); }
+.ticker-closed { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
 /* -- MAIN -- */
 main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 
