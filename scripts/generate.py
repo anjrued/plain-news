@@ -756,8 +756,7 @@ def render_index(all_categories, market_data=None, market_live=False):
         if not d:
             return f'<span class="ticker-item">{label} <span class="ticker-val">--</span></span>'
         cls  = "ticker-up" if d["up"] else "ticker-down"
-        sign = "+" if d["up"] else ""
-        return f'<span class="ticker-item">{label} <span class="ticker-val">{d["price"]} <span class="{cls}">{sign}{d["change"]}%</span></span></span>'
+        return f'<span class="ticker-item">{label} <span class="ticker-val">{d["price"]} <span class="{cls}">{d["change"]}%</span></span></span>'
     ticker_html = " ".join([
         fmt_ticker("sp500",  "S&amp;P 500"),
         fmt_ticker("dow",    "DOW"),
