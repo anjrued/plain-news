@@ -76,6 +76,38 @@ CATEGORIES = {
 
 HEADLINES_PER_CATEGORY = 12
 
+GUARDIAN_API_KEY = os.environ.get("GUARDIAN_API_KEY", "")
+
+# Direct publisher RSS feeds used as content bank — richer summaries than Google News
+CONTENT_BANK_FEEDS = [
+    # BBC
+    "https://feeds.bbci.co.uk/news/rss.xml",
+    "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "https://feeds.bbci.co.uk/news/us-and-canada/rss.xml",
+    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+    "https://feeds.bbci.co.uk/sport/rss.xml",
+    "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
+    # NPR
+    "https://feeds.npr.org/1001/rss.xml",
+    "https://feeds.npr.org/1004/rss.xml",
+    # The Guardian
+    "https://www.theguardian.com/world/rss",
+    "https://www.theguardian.com/us-news/rss",
+    "https://www.theguardian.com/business/rss",
+    "https://www.theguardian.com/technology/rss",
+    "https://www.theguardian.com/science/rss",
+    "https://www.theguardian.com/sport/rss",
+    "https://www.theguardian.com/culture/rss",
+    # ESPN
+    "https://www.espn.com/espn/rss/news",
+    # TechCrunch / Ars / Verge
+    "https://techcrunch.com/feed/",
+    "https://feeds.arstechnica.com/arstechnica/index",
+    "https://www.theverge.com/rss/index.xml",
+]
+
 # Feeds that reliably include images in RSS — used for image matching
 IMAGE_BANK_FEEDS = [
     # BBC (all sections)
@@ -428,48 +460,93 @@ def make_paragraphs(text):
     )
 
 
-def fetch_article_text(url, max_words=900):
-    """Fetch full article text using Anthropic web_fetch tool."""
-    if not url:
-        print("  Article fetch skipped: no URL")
+def build_content_bank():
+    """Build a bank of rich publisher content from direct RSS feeds.
+    These have far richer summaries than Google News and no redirect issues.
+    """
+    bank = []
+    seen = set()
+    for url in CONTENT_BANK_FEEDS:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:25]:
+                title = entry.get("title", "").strip()
+                if not title or title.lower() in seen:
+                    continue
+                seen.add(title.lower())
+                summary = entry.get("summary", entry.get("description", ""))[:1200]
+                if summary and len(summary) > 100:
+                    bank.append({
+                        "title":   title,
+                        "summary": summary,
+                        "source":  feed.feed.get("title", url),
+                    })
+        except Exception as e:
+            print(f"  Content bank feed error ({url[:50]}): {e}")
+    print(f"  Content bank built: {len(bank)} entries")
+    return bank
+
+
+def find_content(headline, content_bank, max_entries=5):
+    """Fuzzy-match a headline against the content bank and return combined rich summaries."""
+    stops = {"that","this","with","from","have","been","said","will","more",
+             "also","when","were","they","their","about","says","just","after"}
+    def tokens(text):
+        return set(re.sub(r"[^a-z0-9 ]", " ", text.lower()).split()) - stops
+    hero_tokens = tokens(headline)
+    matches = []
+    for entry in content_bank:
+        overlap = len(hero_tokens & tokens(entry["title"]))
+        if overlap >= 2:
+            matches.append((overlap, entry))
+    matches.sort(key=lambda x: x[0], reverse=True)
+    if not matches:
+        return ""
+    parts = []
+    for _, entry in matches[:max_entries]:
+        parts.append(f"[{entry["source"]}] {entry["title"]}\n{entry["summary"]}")
+    return "\n\n".join(parts)
+
+
+def fetch_guardian_article(headline):
+    """Search Guardian API for matching article and return full body text.
+    Free API key returns complete article content.
+    """
+    if not GUARDIAN_API_KEY:
         return ""
     try:
-        print(f"  Fetching: {url[:80]}")
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1500,
-            tools=[{
-                "type": "web_fetch_20250910",
-                "name": "web_fetch",
-                "max_uses": 2,
-            }],
-            messages=[{
-                "role": "user",
-                "content": f"Fetch this URL and return ONLY the article body text, no headlines, no navigation, no ads, just the article content: {url}"
-            }],
-            extra_headers={"anthropic-beta": "web-fetch-2025-09-10"},
-        )
-        text = " ".join(
-            block.text for block in response.content
-            if hasattr(block, "text") and block.text and len(block.text) > 50
-        ).strip()
-        error_signals = ["cannot fetch", "unable to access", "cannot access", "no source",
-                        "could not retrieve", "i cannot rewrite", "not able to", "too long",
-                        "url you provided", "no article", "cannot create", "need you to provide"]
-        if any(s in text.lower()[:300] for s in error_signals):
-            print("  Article fetch: got error response, skipping")
-            return ""
-        if not text or len(text.split()) < 100:
-            print(f"  Article fetch: not enough content ({len(text.split())} words)")
-            return ""
-        words = text.split()
-        if len(words) > max_words:
-            text = " ".join(words[:max_words]) + "..."
-        print(f"  Fetched: {len(words)} words")
-        return text
+        import requests as _req
+        # Build search query from key headline words
+        stops = {"that","this","with","from","have","been","said","will","more",
+                 "also","when","were","they","their","about","says","just","after","as","a","the","in","of","for","to","and","or","on","at","an"}
+        words = [w for w in re.sub(r"[^a-z0-9 ]", " ", headline.lower()).split()
+                 if len(w) > 3 and w not in stops][:6]
+        query = " ".join(words)
+        params = {
+            "q":            query,
+            "api-key":      GUARDIAN_API_KEY,
+            "show-fields":  "bodyText",
+            "page-size":    3,
+            "order-by":     "relevance",
+        }
+        resp = _req.get("https://content.guardianapis.com/search", params=params, timeout=8)
+        results = resp.json().get("response", {}).get("results", [])
+        for result in results:
+            body = result.get("fields", {}).get("bodyText", "")
+            if body and len(body.split()) > 150:
+                words_list = body.split()
+                truncated  = " ".join(words_list[:900])
+                print(f"  Guardian: {len(words_list)} words fetched")
+                return truncated
     except Exception as e:
-        print(f"  Article fetch failed: {e}")
-        return ""
+        print(f"  Guardian fetch failed: {e}")
+    return ""
+
+
+def fetch_article_text(url, max_words=900):
+    """Article fetch disabled — base articles from RSS summaries only."""
+    return ""
+
 
 
 def enhance_hero_article(hero, full_text):
@@ -784,9 +861,11 @@ def render_index(all_categories):
 def main():
     all_categories = []
 
-    # Build image bank once — fetches from BBC/ESPN/TechCrunch which include images in RSS
+    # Build image bank and content bank once per run
     print("Building image bank...")
     image_bank = build_image_bank()
+    print("Building content bank...")
+    content_bank = build_content_bank()
 
     for cat_key, cat_config in CATEGORIES.items():
         print(f"Processing: {cat_config['label']}...")
@@ -801,27 +880,35 @@ def main():
             img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
             data["hero"]["image_url"] = img
 
-            # Full article text — fetch and enhance hero
-            article_url = data["hero"].get("link", "")
-            full_text   = fetch_article_text(article_url)
-
-            # Gather all RSS summaries related to this story — catches details web_fetch misses
+            # Hero enrichment — combine all available sources
             hero_headline = data["hero"]["headline"]
-            hero_tokens   = set(re.sub(r'[^a-z0-9 ]', ' ', hero_headline.lower()).split())
+
+            # 1. Guardian API — full article text (best source when available)
+            guardian_text = fetch_guardian_article(hero_headline)
+
+            # 2. Content bank — rich publisher summaries from BBC, NPR, Guardian RSS etc
+            bank_content  = find_content(hero_headline, content_bank)
+
+            # 3. Related RSS summaries from the category feed
+            hero_idx     = data["hero"].get("source_index", 1) - 1
+            related_parts = []
+            hero_tokens   = set(re.sub(r"[^a-z0-9 ]", " ", hero_headline.lower()).split())
             stops         = {"that","this","with","from","have","been","said","will","more",
                              "also","when","were","they","their","about","says","just"}
             hero_tokens  -= stops
-            related_parts = []
             for h in headlines:
-                h_tokens = set(re.sub(r'[^a-z0-9 ]', ' ', h.get("title","").lower()).split()) - stops
+                h_tokens = set(re.sub(r"[^a-z0-9 ]", " ", h.get("title","").lower()).split()) - stops
                 if len(hero_tokens & h_tokens) >= 2:
                     related_parts.append(h.get("title","") + ". " + h.get("summary",""))
             related_text = " | ".join(related_parts[:6])
 
-            # Combine: web_fetch content + related summaries gives Claude the most complete picture
-            source_text = "\n\n".join(filter(None, [full_text, related_text]))
-            if source_text:
+            # Combine: Guardian full text first, then bank content, then related summaries
+            source_parts = [p for p in [guardian_text, bank_content, related_text] if p]
+            source_text  = "\n\n".join(source_parts)
+
+            if source_text and len(source_text.split()) >= 100:
                 data["hero"] = enhance_hero_article(data["hero"], source_text)
+                print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
