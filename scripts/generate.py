@@ -72,6 +72,22 @@ CATEGORIES = {
             "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
         ],
     },
+    "politics": {
+        "label": "Politics",
+        "feeds": [
+            "https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-US&gl=US&ceid=US:en",
+            "https://rss.politico.com/politics-news.xml",
+            "https://thehill.com/feed/",
+        ],
+    },
+    "health": {
+        "label": "Health",
+        "feeds": [
+            "https://news.google.com/rss/headlines/section/topic/HEALTH?hl=en-US&gl=US&ceid=US:en",
+            "https://feeds.bbci.co.uk/news/health/rss.xml",
+            "https://www.statnews.com/feed/",
+        ],
+    },
 }
 
 HEADLINES_PER_CATEGORY = 12
@@ -844,6 +860,8 @@ def render_index(all_categories):
         <button class="cat-btn" data-cat="science">Science</button>
         <button class="cat-btn" data-cat="sports">Sports</button>
         <button class="cat-btn" data-cat="entertainment">Entertainment</button>
+        <button class="cat-btn" data-cat="politics">Politics</button>
+        <button class="cat-btn" data-cat="health">Health</button>
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">&#9790;</button>
@@ -854,6 +872,17 @@ def render_index(all_categories):
 
   <div class="update-bar">
     Updated at <strong>{timestamp}</strong> &mdash; Next update in <strong id="countdown">57 min</strong>
+  </div>
+
+  <div class="market-ticker" id="marketTicker">
+    <div class="ticker-inner">
+      <span class="ticker-label">Markets</span>
+      <span class="ticker-item" id="ticker-sp500">S&amp;P 500 <span class="ticker-val">--</span></span>
+      <span class="ticker-item" id="ticker-dow">DOW <span class="ticker-val">--</span></span>
+      <span class="ticker-item" id="ticker-nasdaq">NASDAQ <span class="ticker-val">--</span></span>
+      <span class="ticker-item" id="ticker-oil">Oil <span class="ticker-val">--</span></span>
+      <span class="ticker-closed" id="ticker-closed" style="display:none">Market closed</span>
+    </div>
   </div>
 
   <main>
