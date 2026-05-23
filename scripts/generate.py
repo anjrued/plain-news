@@ -750,6 +750,22 @@ def render_index(all_categories, market_data=None, market_live=False):
     top_cat   = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
+    # Build market ticker HTML from server-side data
+    def fmt_ticker(key, label):
+        d = (market_data or {}).get(key)
+        if not d:
+            return f'<span class="ticker-item">{label} <span class="ticker-val">--</span></span>'
+        cls  = "ticker-up" if d["up"] else "ticker-down"
+        sign = "+" if d["up"] else ""
+        return f'<span class="ticker-item">{label} <span class="ticker-val">{d["price"]} <span class="{cls}">{sign}{d["change"]}%</span></span></span>'
+    ticker_html = " ".join([
+        fmt_ticker("sp500",  "S&amp;P 500"),
+        fmt_ticker("dow",    "DOW"),
+        fmt_ticker("nasdaq", "NASDAQ"),
+        fmt_ticker("oil",    "Oil"),
+    ])
+    closed_html = '' if market_live else '<span class="ticker-closed">Market closed</span>'
+
     # -- Hero sections (one per category + "all") --
     def hero_section(cat_key, cat_label, hero, visible):
         display    = "" if visible else ' style="display:none"'
@@ -1012,7 +1028,7 @@ def main():
                 stops2 = {"the","a","an","in","of","for","to","and","or","on","at","is","was","are","were","that","this","with"}
                 hl_tok = set(re.sub(r"[^a-z0-9 ]", " ", hero_headline.lower()).split()) - stops2
                 src_tok = set(re.sub(r"[^a-z0-9 ]", " ", source_text[:500].lower()).split()) - stops2
-                if len(hl_tok & src_tok) >= 5:
+                if len(hl_tok & src_tok) >= 3:
                     data["hero"] = enhance_hero_article(data["hero"], source_text)
                     print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
                 else:
