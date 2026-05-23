@@ -587,11 +587,14 @@ def enhance_hero_article(hero, full_text):
         return hero  # Not enough text to improve on
     body = hero.get("body", "")
     prompt = (
-        f"You wrote this article:\n\n{body}\n\n"
-        f"Here is the full source article:\n\n{full_text}\n\n"
-        "Rewrite and improve your article using the full source text. "
-        "Add specific quotes, exact figures, names, and context that were missing. "
-        "Keep it 420-480 words. Plain direct English. No em dashes. No jargon."
+        f"You wrote this article about: {hero.get('headline', '')}\n\n"
+        f"Here is source material:\n\n{full_text}\n\n"
+        "If the source material is clearly about a different story or topic than your article, "
+        "return your original article exactly as written with no changes. "
+        "Otherwise, rewrite your article using ONLY facts explicitly in the source. "
+        "Add specific quotes, figures, names, and confirmed details. "
+        "Do not invent details not in the source. Do not comment on absent information. "
+        "Keep it 420-480 words. Plain direct English. No em dashes."
     )
     try:
         resp = client.messages.create(
@@ -943,7 +946,7 @@ def main():
                 stops2 = {"the","a","an","in","of","for","to","and","or","on","at","is","was","are","were","that","this","with"}
                 hl_tok = set(re.sub(r"[^a-z0-9 ]", " ", hero_headline.lower()).split()) - stops2
                 src_tok = set(re.sub(r"[^a-z0-9 ]", " ", source_text[:500].lower()).split()) - stops2
-                if len(hl_tok & src_tok) >= 3:
+                if len(hl_tok & src_tok) >= 5:
                     data["hero"] = enhance_hero_article(data["hero"], source_text)
                     print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
                 else:
