@@ -1,161 +1,36 @@
-// -- THEME --
-const html   = document.documentElement;
-const toggle = document.getElementById("themeToggle");
+name: Update News
 
-function applyTheme(theme) {
-  html.setAttribute("data-theme", theme);
-  if (toggle) toggle.innerHTML = theme === "dark" ? "&#9728;" : "&#9790;";
-  localStorage.setItem("plain-theme", theme);
-}
+on:
+  workflow_dispatch:
 
-// Default to light — user can toggle to dark
-applyTheme(localStorage.getItem("plain-theme") || "light");
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-if (toggle) {
-  toggle.addEventListener("click", () => {
-    applyTheme(html.getAttribute("data-theme") === "dark" ? "light" : "dark");
-  });
-}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-// -- EXPAND / COLLAPSE --
-function toggleExpand(btn) {
-  const container = btn.closest(".hero, .article-card");
-  expandContainer(container);
-}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-function expandContainer(container) {
-  const expand  = container.querySelector(".article-expand");
-  if (!expand) return;
-  const summary = container.querySelector(".hero-summary, .card-summary");
-  const foot    = container.querySelector(".hero-foot, .card-foot");
-  const btn     = container.querySelector(".expand-btn");
-  const isOpen  = expand.classList.contains("open");
+      - name: Install dependencies
+        run: pip install feedparser anthropic requests
 
-  if (isOpen) {
-    expand.classList.remove("open");
-    if (summary) summary.style.display = "";
-    if (foot)    foot.style.display    = "";
-    if (btn)     btn.innerHTML = "Continue reading &darr;";
-  } else {
-    expand.classList.add("open");
-    if (summary) summary.style.display = "none";
-    if (foot)    foot.style.display    = "none";
-    if (btn)     btn.innerHTML = "Close &uarr;";
-    setTimeout(() => expand.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
-  }
-}
+      - name: Generate news
+        run: python scripts/generate.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GUARDIAN_API_KEY: ${{ secrets.GUARDIAN_API_KEY }}
 
-function collapseThis(collapseBtn) {
-  const container = collapseBtn.closest(".hero, .article-card");
-  const expand    = container.querySelector(".article-expand");
-  const summary   = container.querySelector(".hero-summary, .card-summary");
-  const foot      = container.querySelector(".hero-foot, .card-foot");
-  const btn       = container.querySelector(".expand-btn");
-
-  expand.classList.remove("open");
-  if (summary) summary.style.display = "";
-  if (foot)    foot.style.display    = "";
-  if (btn)     btn.innerHTML = "Continue reading &darr;";
-}
-
-// Make entire card or hero clickable to toggle expand/collapse
-document.addEventListener("click", e => {
-  const container = e.target.closest(".article-card, .hero");
-  if (!container) return;
-  if (container.classList.contains("support-card")) return;
-  if (e.target.closest(".collapse-btn")) return;
-  if (e.target.closest(".expand-btn")) return;
-  expandContainer(container);
-});
-
-// -- CATEGORY FILTER --
-document.querySelectorAll(".cat-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    try {
-      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      const cat = btn.dataset.cat;
-
-      // Switch hero sections
-      document.querySelectorAll("[data-cat-hero]").forEach(hero => {
-        hero.style.display = hero.dataset.catHero === cat ? "block" : "none";
-      });
-
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: "smooth" });
-
-      // Filter article cards (skip support card)
-      document.querySelectorAll(".article-card").forEach(card => {
-        if (card.classList.contains("support-card")) return;
-        const matchesCat  = cat === "all" || card.dataset.cat === cat;
-        const isDupeInCat = cat !== "all" && card.dataset.isHero === "true" && card.dataset.cat === cat;
-        card.style.display = (matchesCat && !isDupeInCat) ? "block" : "none";
-      });
-
-      // Reposition support card to 3rd visible slot
-      const grid        = document.getElementById("articlesGrid");
-      const supportCard = grid ? grid.querySelector(".support-card") : null;
-      if (supportCard && grid) {
-        const visible = Array.from(grid.querySelectorAll(".article-card:not(.support-card)"))
-          .filter(c => c.style.display !== "none");
-        const insertAfter = visible.length >= 2 ? visible[1] : visible[visible.length - 1];
-        if (insertAfter) insertAfter.insertAdjacentElement("afterend", supportCard);
-        supportCard.style.display = "block";
-      }
-    } catch(e) {
-      console.error("Category filter error:", e);
-    }
-  });
-});
-
-// -- MARKET TICKER --
-async function loadMarkets() {
-  const symbols = [
-    { id: "ticker-sp500",  sym: "^GSPC",  label: "S&P 500" },
-    { id: "ticker-dow",    sym: "^DJI",   label: "DOW"     },
-    { id: "ticker-nasdaq", sym: "^IXIC",  label: "NASDAQ"  },
-    { id: "ticker-oil",    sym: "CL=F",   label: "Oil"     },
-  ];
-
-  let anyLive = false;
-
-  for (const t of symbols) {
-    try {
-      const encoded = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.sym)}?interval=1d&range=1d`);
-      const url     = `https://api.allorigins.win/get?url=${encoded}`;
-      const resp    = await fetch(url);
-      const outer   = await resp.json();
-      const data    = JSON.parse(outer.contents);
-      const meta    = data?.chart?.result?.[0]?.meta;
-      if (!meta) continue;
-
-      const price  = meta.regularMarketPrice;
-      const prev   = meta.previousClose || meta.chartPreviousClose;
-      const change = ((price - prev) / prev * 100);
-      const sign   = change >= 0 ? "+" : "";
-      const cls    = change >= 0 ? "ticker-up" : "ticker-down";
-      const isLive = meta.marketState === "REGULAR";
-      if (isLive) anyLive = true;
-
-      const el = document.getElementById(t.id);
-      if (el) {
-        el.querySelector(".ticker-val").innerHTML =
-          `${price.toLocaleString("en-US", {maximumFractionDigits: 2})} <span class="${cls}">${sign}${change.toFixed(2)}%</span>`;
-      }
-    } catch(e) { /* silently skip */ }
-  }
-
-  const closedEl = document.getElementById("ticker-closed");
-  if (closedEl) closedEl.style.display = anyLive ? "none" : "inline";
-}
-loadMarkets();
-
-// -- COUNTDOWN --
-function updateCountdown() {
-  const now = new Date(), next = new Date(now);
-  next.setHours(now.getHours() + 1, 0, 0, 0);
-  const el = document.getElementById("countdown");
-  if (el) el.textContent = Math.floor((next - now) / 60000) + " min";
-}
-updateCountdown();
-setInterval(updateCountdown, 60000);
+      - name: Commit and push
+        run: |
+          git config user.name "Plain Bot"
+          git config user.email "bot@plainnews.app"
+          git add -A
+          git diff --staged --quiet || git commit -m "Update: $(date -u '+%b %d %Y %H:%M UTC')"
+          git push
