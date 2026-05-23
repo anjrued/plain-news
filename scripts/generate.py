@@ -710,7 +710,42 @@ def global_rank(all_cards):
         return all_cards
 
 
-def render_index(all_categories):
+def fetch_market_data():
+    """Fetch market data server-side during pipeline run. No CORS issues."""
+    import requests as _req
+    symbols = [
+        ("sp500",  "^GSPC",  "S&P 500"),
+        ("dow",    "^DJI",   "DOW"),
+        ("nasdaq", "^IXIC",  "NASDAQ"),
+        ("oil",    "CL=F",   "Oil"),
+    ]
+    results = {}
+    for key, sym, label in symbols:
+        try:
+            url  = f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=1d"
+            hdrs = {"User-Agent": "Mozilla/5.0"}
+            resp = _req.get(url, headers=hdrs, timeout=6)
+            meta = resp.json()["chart"]["result"][0]["meta"]
+            price  = meta["regularMarketPrice"]
+            prev   = meta.get("previousClose") or meta.get("chartPreviousClose", price)
+            change = (price - prev) / prev * 100
+            state  = meta.get("marketState", "CLOSED")
+            results[key] = {
+                "label":  label,
+                "price":  f"{price:,.2f}",
+                "change": f"{change:+.2f}",
+                "up":     change >= 0,
+                "live":   state == "REGULAR",
+            }
+        except Exception as e:
+            print(f"  Market fetch failed ({sym}): {e}")
+            results[key] = None
+    live = any(v and v["live"] for v in results.values())
+    print(f"  Market data: {sum(1 for v in results.values() if v)} symbols fetched, market {'live' if live else 'closed'}")
+    return results, live
+
+
+def render_index(all_categories, market_data=None, market_live=False):
     timestamp = now_et()
     top_cat   = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
@@ -877,14 +912,11 @@ def render_index(all_categories):
     Updated at <strong>{timestamp}</strong> &mdash; Next update in <strong id="countdown">57 min</strong>
   </div>
 
-  <div class="market-ticker" id="marketTicker">
+  <div class="market-ticker">
     <div class="ticker-inner">
       <span class="ticker-label">Markets</span>
-      <span class="ticker-item" id="ticker-sp500">S&amp;P 500 <span class="ticker-val">--</span></span>
-      <span class="ticker-item" id="ticker-dow">DOW <span class="ticker-val">--</span></span>
-      <span class="ticker-item" id="ticker-nasdaq">NASDAQ <span class="ticker-val">--</span></span>
-      <span class="ticker-item" id="ticker-oil">Oil <span class="ticker-val">--</span></span>
-      <span class="ticker-closed" id="ticker-closed" style="display:none">Market closed</span>
+      {ticker_html}
+      {closed_html}
     </div>
   </div>
 
@@ -996,7 +1028,10 @@ def main():
         print("No categories generated. Aborting.")
         return
 
-    index_html = render_index(all_categories)
+    print("Fetching market data...")
+    market_data, market_live = fetch_market_data()
+
+    index_html = render_index(all_categories, market_data, market_live)
     (OUTPUT_DIR / "index.html").write_text(index_html, encoding="utf-8")
 
     print(f"\nDone. {len(all_categories)} categories written to index.html.")
