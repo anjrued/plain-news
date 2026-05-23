@@ -865,6 +865,18 @@ def render_index(all_categories):
       {cards_html}
     </div>
 
+    <div class="email-signup" id="signup">
+      <div class="email-signup-text">
+        <p>The week on Plain.</p>
+        <span>The most important stories of the week, every Sunday morning. Free.</span>
+      </div>
+      <div class="email-signup-form">
+        <input type="email" id="emailInput" placeholder="your@email.com" class="email-input">
+        <button class="email-btn" onclick="subscribeEmail()">Subscribe</button>
+      </div>
+      <p class="email-msg" id="emailMsg"></p>
+    </div>
+
     <div class="support-box" id="support">
       <div class="support-box-text">
         <p>Plain runs on reader support.</p>
