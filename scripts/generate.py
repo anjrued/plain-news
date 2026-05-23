@@ -882,6 +882,7 @@ def render_index(all_categories):
         <a href="about.html">About</a>
         <a href="#support">Support</a>
         <a href="#">Contact</a>
+        <a href="https://lowsignal.dev" target="_blank">Built by Low Signal Labs</a>
       </div>
     </div>
   </footer>
