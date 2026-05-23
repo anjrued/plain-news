@@ -281,11 +281,13 @@ Scoring guidance:
 CRITICAL ACCURACY RULES - never violate these:
 - Only write details explicitly stated in the provided headlines and summaries.
 - Never speculate, infer, or invent causes, circumstances, or details not in the source.
-- If a detail is not in the source, omit it completely. Do not reference its absence in any way.
-- NEVER write phrases like: "details have not been confirmed", "no official statement", "it remains unclear",
-  "has not been announced", "reporting is ongoing" — these are unverified claims.
+- If a detail is not in the source, omit it. Never write any sentence that describes missing, unavailable,
+  unconfirmed, unreleased, or unknown information — in any phrasing whatsoever.
+- This means never writing sentences like: "details have not been released", "circumstances are unknown",
+  "officials have not commented", "no cause has been given", "it is unclear why", "the reason is not known",
+  or ANY variation of this pattern. If you do not have a fact, do not mention it in any form.
 - Never fabricate quotes, statistics, names, or events not present in the source material.
-- Write what is confirmed. Stop there. Do not comment on what is missing.
+- Write what is confirmed. Stop when the confirmed facts run out.
 
 TEMPORAL ACCURACY RULES - always apply these:
 - Pay close attention to when events occurred. Use past tense for events that have already happened.
@@ -377,6 +379,34 @@ Return ONLY valid JSON:
     data["hero"] = attach_source(data["hero"], headlines)
     for card in data.get("cards", []):
         attach_source(card, headlines)
+
+    # Age-based score decay for stale non-breaking stories
+    def decay_score(item):
+        score = item.get("urgency_score", 5)
+        idx = item.get("source_index")
+        if idx is None: return item
+        try:
+            pub_raw = headlines[int(idx) - 1].get("published", "")
+            if not pub_raw: return item
+            from email.utils import parsedate_to_datetime
+            from datetime import timezone
+            dt  = parsedate_to_datetime(pub_raw).astimezone(timezone.utc)
+            now = datetime.now(timezone.utc)
+            hrs = (now - dt).total_seconds() / 3600
+            headline = item.get("headline", "").lower()
+            fresh_words = ["confirms","confirmed","announces","announced","reveals","charges",
+                          "arrested","resigns","fired","dies","dead","breaks","exclusive","new details"]
+            is_fresh = any(w in headline for w in fresh_words)
+            if not is_fresh:
+                if hrs > 48: score = min(score, 4)
+                elif hrs > 24: score = min(score, 6)
+        except Exception:
+            pass
+        item["urgency_score"] = score
+        return item
+
+    decay_score(data["hero"])
+    for card in data.get("cards", []): decay_score(card)
 
     return data
 
@@ -774,7 +804,24 @@ def main():
             # Full article text — fetch and enhance hero
             article_url = data["hero"].get("link", "")
             full_text   = fetch_article_text(article_url)
-            data["hero"] = enhance_hero_article(data["hero"], full_text)
+
+            # Gather all RSS summaries related to this story — catches details web_fetch misses
+            hero_headline = data["hero"]["headline"]
+            hero_tokens   = set(re.sub(r'[^a-z0-9 ]', ' ', hero_headline.lower()).split())
+            stops         = {"that","this","with","from","have","been","said","will","more",
+                             "also","when","were","they","their","about","says","just"}
+            hero_tokens  -= stops
+            related_parts = []
+            for h in headlines:
+                h_tokens = set(re.sub(r'[^a-z0-9 ]', ' ', h.get("title","").lower()).split()) - stops
+                if len(hero_tokens & h_tokens) >= 2:
+                    related_parts.append(h.get("title","") + ". " + h.get("summary",""))
+            related_text = " | ".join(related_parts[:6])
+
+            # Combine: web_fetch content + related summaries gives Claude the most complete picture
+            source_text = "\n\n".join(filter(None, [full_text, related_text]))
+            if source_text:
+                data["hero"] = enhance_hero_article(data["hero"], source_text)
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
