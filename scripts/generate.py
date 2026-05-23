@@ -865,14 +865,6 @@ def render_index(all_categories):
       {cards_html}
     </div>
 
-    <div class="email-signup" id="signup">
-      <div class="email-signup-text">
-        <p>The week on Plain.</p>
-        <span>The most important stories of the week, every Sunday morning. Free.</span>
-      </div>
-      <script async src="https://subscribe-forms.beehiiv.com/v3/loader.js" data-beehiiv-form="0175cd6b-cb42-4b22-bd3d-c9487455c48e"></script>
-    </div>
-
     <div class="support-box" id="support">
       <div class="support-box-text">
         <p>Plain runs on reader support.</p>
@@ -973,6 +965,7 @@ def main():
 
     index_html = render_index(all_categories)
     (OUTPUT_DIR / "index.html").write_text(index_html, encoding="utf-8")
+
     print(f"\nDone. {len(all_categories)} categories written to index.html.")
 
 
