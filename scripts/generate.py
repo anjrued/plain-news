@@ -244,7 +244,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 seen.add(title.lower())
                 entries.append({
                     "title":     title,
-                    "summary":   entry.get("summary", entry.get("description", ""))[:400],
+                    "summary":   entry.get("summary", entry.get("description", ""))[:800],
                     "link":      extract_publisher_url(entry),
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
@@ -304,7 +304,7 @@ def generate_category_content(category_key, category_label, headlines):
     def hl_line(i, h):
         pub = h.get("published", "")
         pub_str = f" [pub:{pub}]" if pub else ""
-        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:200]}"
+        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:600]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
 
     prompt = f"""Here are the current top headlines for the {category_label} category:
