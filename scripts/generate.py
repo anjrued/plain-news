@@ -870,11 +870,7 @@ def render_index(all_categories):
         <p>The week on Plain.</p>
         <span>The most important stories of the week, every Sunday morning. Free.</span>
       </div>
-      <div class="email-signup-form">
-        <input type="email" id="emailInput" placeholder="your@email.com" class="email-input">
-        <button class="email-btn" onclick="subscribeEmail()">Subscribe</button>
-      </div>
-      <p class="email-msg" id="emailMsg"></p>
+      <script async src="https://subscribe-forms.beehiiv.com/v3/loader.js" data-beehiiv-form="0175cd6b-cb42-4b22-bd3d-c9487455c48e"></script>
     </div>
 
     <div class="support-box" id="support">
