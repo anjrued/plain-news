@@ -880,8 +880,8 @@ def render_index(all_categories):
       <span class="footer-tagline">Updated every hour. No ads. No noise. Always free.</span>
       <div class="footer-links">
         <a href="about.html">About</a>
-        <a href="#support">Support</a>
-        <a href="#">Contact</a>
+        <a href="https://buymeacoffee.com/andrewdobrow" target="_blank">Support</a>
+        <a href="mailto:anjrued123@gmail.com">Contact</a>
         <a href="https://lowsignal.dev" target="_blank">Built by Low Signal Labs</a>
       </div>
     </div>
