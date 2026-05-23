@@ -108,6 +108,47 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
   });
 });
 
+// -- EMAIL SIGNUP --
+async function subscribeEmail() {
+  const input = document.getElementById("emailInput");
+  const msg   = document.getElementById("emailMsg");
+  const email = input ? input.value.trim() : "";
+
+  if (!email || !email.includes("@")) {
+    if (msg) msg.textContent = "Please enter a valid email address.";
+    return;
+  }
+
+  if (msg) msg.textContent = "Subscribing...";
+
+  try {
+    const resp = await fetch("https://api.beehiiv.com/v2/publications/3677d41d-d30a-44a6-aff4-41a7e5e6d522/subscriptions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer oX50PVMHov7XLYubTQLj1wSALdvH2F8gxOZBqegqlVix0sVeZEWAyYMA3MbZKevB",
+      },
+      body: JSON.stringify({
+        email:           email,
+        reactivate_existing: false,
+        send_welcome_email:  true,
+        utm_source:      "plainnews.app",
+        utm_medium:      "organic",
+        utm_campaign:    "signup_form",
+      }),
+    });
+
+    if (resp.ok) {
+      if (msg) msg.textContent = "You're in. See you Sunday.";
+      if (input) input.value = "";
+    } else {
+      if (msg) msg.textContent = "Something went wrong. Please try again.";
+    }
+  } catch(e) {
+    if (msg) msg.textContent = "Something went wrong. Please try again.";
+  }
+}
+
 // -- COUNTDOWN --
 function updateCountdown() {
   const now = new Date(), next = new Date(now);
