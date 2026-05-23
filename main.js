@@ -25,6 +25,7 @@ function toggleExpand(btn) {
 
 function expandContainer(container) {
   const expand  = container.querySelector(".article-expand");
+  if (!expand) return;
   const summary = container.querySelector(".hero-summary, .card-summary");
   const foot    = container.querySelector(".hero-foot, .card-foot");
   const btn     = container.querySelector(".expand-btn");
@@ -57,14 +58,14 @@ function collapseThis(collapseBtn) {
   if (btn)     btn.innerHTML = "Continue reading &darr;";
 }
 
-// Make entire card clickable to toggle expand/collapse
+// Make entire card or hero clickable to toggle expand/collapse
 document.addEventListener("click", e => {
-  const card = e.target.closest(".article-card");
-  if (!card) return;
-  if (card.classList.contains("support-card")) return;
-  if (e.target.closest(".collapse-btn")) return;  // collapse button handles itself
-  if (e.target.closest(".expand-btn")) return;    // expand button handles itself
-  expandContainer(card);
+  const container = e.target.closest(".article-card, .hero");
+  if (!container) return;
+  if (container.classList.contains("support-card")) return;
+  if (e.target.closest(".collapse-btn")) return;
+  if (e.target.closest(".expand-btn")) return;
+  expandContainer(container);
 });
 
 // -- CATEGORY FILTER --
