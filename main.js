@@ -111,28 +111,30 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
 // -- MARKET TICKER --
 async function loadMarkets() {
   const symbols = [
-    { id: "ticker-sp500",  sym: "%5EGSPC",  label: "S&P 500" },
-    { id: "ticker-dow",    sym: "%5EDJI",   label: "DOW"     },
-    { id: "ticker-nasdaq", sym: "%5EIXIC",  label: "NASDAQ"  },
-    { id: "ticker-oil",    sym: "CL%3DF",   label: "Oil"     },
+    { id: "ticker-sp500",  sym: "^GSPC",  label: "S&P 500" },
+    { id: "ticker-dow",    sym: "^DJI",   label: "DOW"     },
+    { id: "ticker-nasdaq", sym: "^IXIC",  label: "NASDAQ"  },
+    { id: "ticker-oil",    sym: "CL=F",   label: "Oil"     },
   ];
 
   let anyLive = false;
 
   for (const t of symbols) {
     try {
-      const url  = `https://query1.finance.yahoo.com/v8/finance/chart/${t.sym}?interval=1d&range=1d`;
-      const resp = await fetch(url);
-      const data = await resp.json();
-      const meta = data?.chart?.result?.[0]?.meta;
+      const encoded = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(t.sym)}?interval=1d&range=1d`);
+      const url     = `https://api.allorigins.win/get?url=${encoded}`;
+      const resp    = await fetch(url);
+      const outer   = await resp.json();
+      const data    = JSON.parse(outer.contents);
+      const meta    = data?.chart?.result?.[0]?.meta;
       if (!meta) continue;
 
-      const price    = meta.regularMarketPrice;
-      const prev     = meta.previousClose || meta.chartPreviousClose;
-      const change   = ((price - prev) / prev * 100);
-      const sign     = change >= 0 ? "+" : "";
-      const cls      = change >= 0 ? "ticker-up" : "ticker-down";
-      const isLive   = meta.marketState === "REGULAR";
+      const price  = meta.regularMarketPrice;
+      const prev   = meta.previousClose || meta.chartPreviousClose;
+      const change = ((price - prev) / prev * 100);
+      const sign   = change >= 0 ? "+" : "";
+      const cls    = change >= 0 ? "ticker-up" : "ticker-down";
+      const isLive = meta.marketState === "REGULAR";
       if (isLive) anyLive = true;
 
       const el = document.getElementById(t.id);
@@ -143,7 +145,6 @@ async function loadMarkets() {
     } catch(e) { /* silently skip */ }
   }
 
-  // Show closed indicator if markets are not in regular session
   const closedEl = document.getElementById("ticker-closed");
   if (closedEl) closedEl.style.display = anyLive ? "none" : "inline";
 }
