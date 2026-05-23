@@ -37,8 +37,8 @@ header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-b
 main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 
 /* -- HERO -- */
-.hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; }
-.hero-inner { display: block; overflow: hidden; }
+.hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; cursor: pointer; }
+.hero-inner { display: block; overflow: hidden; cursor: pointer; }
 .hero-image {
   float: right;
   width: 400px;
