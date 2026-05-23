@@ -335,6 +335,29 @@ value judgments. Words like "controversial", "rocky", "embattled", "slammed", "b
 Report what happened. Let readers draw their own conclusions."""
 
 
+def strip_markdown(text, headline=""):
+    """Remove markdown formatting and headline restatements from article text."""
+    if not text:
+        return text
+    text = re.sub(r"#{1,6}\s*", "", text)
+    text = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", text)
+    text = re.sub(r"_([^_]+)_", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"^[-*]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    # Remove first paragraph if it looks like a headline restatement
+    if headline:
+        paragraphs = text.split("\n\n")
+        if paragraphs:
+            first = paragraphs[0].strip()
+            if len(first.split()) < 20:
+                hl_words = set(re.sub(r"[^a-z0-9 ]", " ", headline.lower()).split())
+                p_words  = set(re.sub(r"[^a-z0-9 ]", " ", first.lower()).split())
+                if len(hl_words & p_words) >= min(4, len(hl_words) // 2):
+                    text = "\n\n".join(paragraphs[1:]).strip()
+    return text
+
+
 def generate_category_content(category_key, category_label, headlines):
     # Build headlines with raw published strings for Claude to copy back
     def hl_line(i, h):
@@ -413,8 +436,10 @@ Return ONLY valid JSON:
         return item
 
     data["hero"] = attach_source(data["hero"], headlines)
+    data["hero"]["body"] = strip_markdown(data["hero"].get("body", ""), data["hero"].get("headline", ""))
     for card in data.get("cards", []):
         attach_source(card, headlines)
+        card["body"] = strip_markdown(card.get("body", ""), card.get("headline", ""))
 
     # Age-based score decay for stale non-breaking stories
     def decay_score(item):
@@ -576,7 +601,7 @@ def enhance_hero_article(hero, full_text):
         )
         enhanced = resp.content[0].text.strip()
         if enhanced:
-            hero["body"] = enhanced
+            hero["body"] = strip_markdown(enhanced, hero.get("headline", ""))
             print(f"  Hero article enhanced with full source text")
     except Exception as e:
         print(f"  Enhancement failed ({e}), keeping original")
