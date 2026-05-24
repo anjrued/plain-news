@@ -624,9 +624,9 @@ def enhance_hero_article(hero, full_text):
         "but paraphrase everything else in plain clear English. "
         "Do not invent details not in the source. Do not comment on absent information. "
         "Do not copy newsletter openers like 'Good morning' or any introductory salutation. "
-        "CRITICAL: The article must be consistent with the headline. If the headline names a specific "
-        "location, person, or event, the article must be about that exact location, person, or event. "
-        "Never substitute a different location or incident even if the source material describes something similar. "
+        "CRITICAL: If the source material describes a different location, person, or incident than "
+        "the headline, return your original article exactly as written with no changes. "
+        "Never invent details to make a mismatched source fit the headline. "
         "Keep it 420-480 words. Plain direct English. No em dashes."
     )
     try:
