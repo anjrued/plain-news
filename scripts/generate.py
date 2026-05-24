@@ -69,10 +69,11 @@ CATEGORIES = {
     "politics": {
         "label": "Politics",
         "feeds": [
-            "https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-US&gl=US&ceid=US:en&sort=date",
             "https://rss.politico.com/politics-news.xml",
             "https://thehill.com/feed/",
             "https://feeds.npr.org/1014/rss.xml",
+            "https://rss.politico.com/congress.xml",
+            "https://thehill.com/homenews/administration/feed/",
         ],
     },
 }
@@ -266,33 +267,6 @@ def extract_publisher_url(entry):
     return link
 
 
-INTERNATIONAL_POLITICS_TERMS = {
-    "turkish", "turkey", "erdogan", "french", "france", "macron", "german", "germany",
-    "british", "britain", "uk", "sunak", "starmer", "canadian", "canada", "trudeau",
-    "australian", "australia", "indian", "india", "modi", "chinese", "china", "xi",
-    "russian", "russia", "putin", "ukrainian", "ukraine", "zelensky", "israeli", "israel",
-    "netanyahu", "iranian", "iran", "korean", "brazil", "brazilian", "mexican", "mexico",
-    "european", "parliament", "nato", "eu ", "nigerian", "nigel", "philippine", "philippines",
-    "polish", "poland", "hungarian", "hungary", "swedish", "sweden", "danish", "denmark",
-    "pakistani", "pakistan", "afghan", "afghanistan", "venezuelan", "venezuela", "cuban", "cuba",
-    "nigerian", "nigeria", "kenyan", "kenya", "senegal", "senegalese", "balochistan"
-}
-
-
-def filter_politics_headlines(headlines):
-    """Remove clearly international political stories from Politics category feed."""
-    filtered = []
-    for h in headlines:
-        title_lower = h.get("title", "").lower()
-        summary_lower = h.get("summary", "").lower()
-        combined = title_lower + " " + summary_lower
-        if any(term in combined for term in INTERNATIONAL_POLITICS_TERMS):
-            continue
-        filtered.append(h)
-    # Keep at least 6 stories even if filtering removes too many
-    return filtered if len(filtered) >= 6 else headlines
-
-
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
     """Pull headlines from feeds in priority order. First feed fills most slots."""
     seen, entries = set(), []
@@ -334,7 +308,7 @@ SCORING GUIDE:
 - Economic policy, natural disasters with casualties: 7-9
 - Follow-ups on previous day's events: 4-6 (always below genuinely new stories)
 - Sports/entertainment: 4-8 based on cultural significance
-- Politics category: US political news only. International political stories cap at 4.
+- Politics category: the story must be primarily ABOUT a US political actor, institution, or policy (Congress, White House, Supreme Court, US elections, US politicians). US-Iran negotiations belong here because the US government is the main actor. Turkish police raiding opposition offices do NOT — that is a World story. If the US government is not the primary subject, score it 1-2.
 - U.S. category: political news scores above 7 only if it directly affects economy, public safety, constitutional rights, or national security.
 
 ACCURACY — never violate:
@@ -678,17 +652,16 @@ def global_rank(all_cards):
     n = len(all_cards)
     prompt = (
         f"Rank these {n} news stories by true global importance and urgency.\n"
-        "This site serves a primarily US audience. Weight accordingly.\n"
-        "PRIMARY signal: consequence and substance of the story itself.\n"
-        "SECONDARY signal: recency — but use it carefully. RSS timestamps update when articles are edited.\n"
+        "This site serves a primarily US audience. The front page hero must be relevant to US readers.\n"
+        "PRIMARY signal: consequence and US relevance combined.\n"
+        "SECONDARY signal: recency — edited timestamps do not make old stories new.\n"
         "Apply this weighting:\n"
-        "1. Stories with direct US impact (economy, security, foreign policy, domestic policy): highest priority\n"
-        "2. Major geopolitical developments affecting global stability, oil, trade, or US allies: very high\n"
-        "3. Government resignations, cabinet changes, national security developments: high\n"
-        "4. World disasters or tragedies with no direct US connection (train bombings, regional conflicts, foreign political crises): these are important World stories but should NOT lead the front page for a US audience unless nothing more US-relevant exists. A Pakistan train bombing ranks below a US economic decision or domestic crisis.\n"
-        "5. Follow-up stories: rank below genuinely new stories\n"
-        "6. Sports, entertainment, personal stories: rank below policy and crisis stories unless exceptionally significant\n"
-        "When two stories seem equally important, use the timestamp as a tiebreaker — but only if the story is genuinely new.\n\n"
+        "1. Stories with direct US impact (economy, security, foreign policy, domestic policy, US deaths): highest priority — these should lead\n"
+        "2. Major geopolitical developments affecting oil, trade, US allies, or global stability with US consequences: very high\n"
+        "3. International tragedies or crises with no direct US connection (foreign train bombings, foreign political crackdowns, regional conflicts not involving the US): these belong in the World section but should NOT lead the front page. Rank them below any story with direct US relevance, no matter how many casualties.\n"
+        "4. Follow-up stories: rank below genuinely new stories\n"
+        "5. Sports, entertainment: rank below policy and crisis stories unless exceptionally significant\n"
+        "When two stories seem equally important, use the timestamp as a tiebreaker.\n\n"
         f"{stories_text}\n\n"
         "Return ONLY a JSON array of the original numbers in ranked order, most important first.\n"
         "Example: [4, 1, 12, 7, ...]"
@@ -993,9 +966,6 @@ def main():
     for cat_key, cat_config in CATEGORIES.items():
         print(f"Processing: {cat_config['label']}...")
         headlines = fetch_headlines(cat_config["feeds"])
-        if cat_key == "politics":
-            headlines = filter_politics_headlines(headlines)
-            print(f"  Politics filter: {len(headlines)} US-focused headlines")
         if not headlines:
             print(f"  No headlines found for {cat_config['label']}, skipping.")
             continue
