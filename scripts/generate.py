@@ -75,7 +75,7 @@ CATEGORIES = {
     "politics": {
         "label": "Politics",
         "feeds": [
-            "https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-US&gl=US&ceid=US:en",
+            "https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-US&gl=US&ceid=US:en&sort=date",
             "https://rss.politico.com/politics-news.xml",
             "https://thehill.com/feed/",
             "https://feeds.npr.org/1014/rss.xml",
@@ -326,7 +326,7 @@ Scoring guidance:
 - Sports and entertainment: score on genuine cultural impact — a historic death or championship can score 8+, routine sports news 4-6
 - Follow-up stories on previous day's events (new details, minor updates): 4-6, always below genuinely new stories of similar weight
 - Caution: RSS timestamps refresh on edits — judge whether a story is genuinely new before using recency as a factor.
-- For the Politics category: strongly prioritize US political news (Congress, White House, Supreme Court, federal agencies, elections). International political stories should only score above 6 if they have direct major implications for the US or represent extraordinary global significance. A government reshuffle in a small or mid-size country should never outscore US political developments.
+- For the Politics category: this is a US Politics section. Only cover US political news (Congress, White House, Supreme Court, federal agencies, elections, US political figures). International political stories should score no higher than 4 regardless of significance — those belong in the World category. If the top stories are all international, pick the most relevant US political story instead.
 - For the U.S. category: political news should only score above 7 if it has broad non-political consequences — meaning it directly affects the economy, public safety, constitutional rights, or national security. Routine congressional procedural news, political appointments, campaign developments, and party dynamics belong in Politics, not U.S. The U.S. category should serve readers who want national news without a political focus.
 
 CRITICAL ACCURACY RULES - never violate these:
