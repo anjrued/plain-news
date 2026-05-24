@@ -266,6 +266,33 @@ def extract_publisher_url(entry):
     return link
 
 
+INTERNATIONAL_POLITICS_TERMS = {
+    "turkish", "turkey", "erdogan", "french", "france", "macron", "german", "germany",
+    "british", "britain", "uk", "sunak", "starmer", "canadian", "canada", "trudeau",
+    "australian", "australia", "indian", "india", "modi", "chinese", "china", "xi",
+    "russian", "russia", "putin", "ukrainian", "ukraine", "zelensky", "israeli", "israel",
+    "netanyahu", "iranian", "iran", "korean", "brazil", "brazilian", "mexican", "mexico",
+    "european", "parliament", "nato", "eu ", "nigerian", "nigel", "philippine", "philippines",
+    "polish", "poland", "hungarian", "hungary", "swedish", "sweden", "danish", "denmark",
+    "pakistani", "pakistan", "afghan", "afghanistan", "venezuelan", "venezuela", "cuban", "cuba",
+    "nigerian", "nigeria", "kenyan", "kenya", "senegal", "senegalese", "balochistan"
+}
+
+
+def filter_politics_headlines(headlines):
+    """Remove clearly international political stories from Politics category feed."""
+    filtered = []
+    for h in headlines:
+        title_lower = h.get("title", "").lower()
+        summary_lower = h.get("summary", "").lower()
+        combined = title_lower + " " + summary_lower
+        if any(term in combined for term in INTERNATIONAL_POLITICS_TERMS):
+            continue
+        filtered.append(h)
+    # Keep at least 6 stories even if filtering removes too many
+    return filtered if len(filtered) >= 6 else headlines
+
+
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
     """Pull headlines from feeds in priority order. First feed fills most slots."""
     seen, entries = set(), []
@@ -966,6 +993,9 @@ def main():
     for cat_key, cat_config in CATEGORIES.items():
         print(f"Processing: {cat_config['label']}...")
         headlines = fetch_headlines(cat_config["feeds"])
+        if cat_key == "politics":
+            headlines = filter_politics_headlines(headlines)
+            print(f"  Politics filter: {len(headlines)} US-focused headlines")
         if not headlines:
             print(f"  No headlines found for {cat_config['label']}, skipping.")
             continue
