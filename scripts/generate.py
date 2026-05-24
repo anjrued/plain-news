@@ -364,6 +364,14 @@ def strip_markdown(text, headline=""):
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
     text = re.sub(r"^[-*]\s+", "", text, flags=re.MULTILINE)
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    # Remove common Guardian/newsletter openers
+    greetings = ["good morning.", "good afternoon.", "good evening.", "good morning,", "good afternoon,", "good evening,"]
+    lower = text.lower()
+    for g in greetings:
+        if lower.startswith(g):
+            text = text[len(g):].lstrip()
+            break
+
     # Remove first paragraph if it looks like a headline restatement
     if headline:
         paragraphs = text.split("\n\n")
@@ -610,9 +618,12 @@ def enhance_hero_article(hero, full_text):
         f"Here is source material:\n\n{full_text}\n\n"
         "If the source material is clearly about a different story or topic than your article, "
         "return your original article exactly as written with no changes. "
-        "Otherwise, rewrite your article using ONLY facts explicitly in the source. "
-        "Add specific quotes, figures, names, and confirmed details. "
+        "Otherwise, rewrite your article using confirmed facts from the source. "
+        "Write in your own words — do not copy sentences or phrases verbatim from the source. "
+        "You may reference specific quotes from named individuals if they appear in the source, "
+        "but paraphrase everything else in plain clear English. "
         "Do not invent details not in the source. Do not comment on absent information. "
+        "Do not copy newsletter openers like 'Good morning' or any introductory salutation. "
         "Keep it 420-480 words. Plain direct English. No em dashes."
     )
     try:
