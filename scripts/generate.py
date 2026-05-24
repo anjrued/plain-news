@@ -39,20 +39,14 @@ CATEGORIES = {
         ],
     },
     "tech": {
-        "label": "Tech",
+        "label": "Tech & Science",
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en",
+            "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
             "https://www.theverge.com/rss/index.xml",
             "https://feeds.arstechnica.com/arstechnica/index",
             "https://techcrunch.com/feed/",
-        ],
-    },
-    "science": {
-        "label": "Science",
-        "feeds": [
-            "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
-            "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml",
         ],
     },
     "sports": {
@@ -79,14 +73,6 @@ CATEGORIES = {
             "https://rss.politico.com/politics-news.xml",
             "https://thehill.com/feed/",
             "https://feeds.npr.org/1014/rss.xml",
-        ],
-    },
-    "health": {
-        "label": "Health",
-        "feeds": [
-            "https://news.google.com/rss/headlines/section/topic/HEALTH?hl=en-US&gl=US&ceid=US:en",
-            "https://feeds.bbci.co.uk/news/health/rss.xml",
-            "https://www.statnews.com/feed/",
         ],
     },
 }
@@ -631,7 +617,7 @@ def enhance_hero_article(hero, full_text):
     )
     try:
         resp = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-haiku-4-5-20251001",
             max_tokens=1200,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -926,9 +912,7 @@ def render_index(all_categories, market_data=None, market_live=False):
         <button class="cat-btn" data-cat="us">U.S.</button>
         <button class="cat-btn" data-cat="politics">Politics</button>
         <button class="cat-btn" data-cat="business">Business</button>
-        <button class="cat-btn" data-cat="tech">Tech</button>
-        <button class="cat-btn" data-cat="science">Science</button>
-        <button class="cat-btn" data-cat="health">Health</button>
+        <button class="cat-btn" data-cat="tech">Tech & Science</button>
         <button class="cat-btn" data-cat="sports">Sports</button>
         <button class="cat-btn" data-cat="entertainment">Entertainment</button>
       </nav>
