@@ -581,18 +581,14 @@ def enhance_hero_article(hero, full_text):
     body = hero.get("body", "")
     prompt = (
         f"You wrote this article about: {hero.get('headline', '')}\n\n"
+        f"Your original article:\n\n{body}\n\n"
         f"Here is source material:\n\n{full_text}\n\n"
-        "If the source material is clearly about a different story or topic than your article, "
-        "return your original article exactly as written with no changes. "
+        "If the source material is clearly about a different story, location, or incident than the headline, "
+        "return your original article exactly as written above with no changes. "
         "Otherwise, rewrite your article using confirmed facts from the source. "
-        "Write in your own words — do not copy sentences or phrases verbatim from the source. "
-        "You may reference specific quotes from named individuals if they appear in the source, "
-        "but paraphrase everything else in plain clear English. "
+        "Write in your own words — paraphrase everything except direct quotes from named individuals. "
         "Do not invent details not in the source. Do not comment on absent information. "
-        "Do not copy newsletter openers like 'Good morning' or any introductory salutation. "
-        "CRITICAL: If the source material describes a different location, person, or incident than "
-        "the headline, return your original article exactly as written with no changes. "
-        "Never invent details to make a mismatched source fit the headline. "
+        "Do not copy newsletter openers like 'Good morning'. "
         "Keep it 420-480 words. Plain direct English. No em dashes."
     )
     try:
@@ -602,9 +598,13 @@ def enhance_hero_article(hero, full_text):
             messages=[{"role": "user", "content": prompt}]
         )
         enhanced = resp.content[0].text.strip()
-        if enhanced:
+        # Detect if Claude returned an explanation instead of an article
+        explanation_signals = ["i cannot rewrite", "source material", "does not match", "i must return", "cannot proceed"]
+        if enhanced and not any(s in enhanced.lower()[:200] for s in explanation_signals):
             hero["body"] = strip_markdown(enhanced, hero.get("headline", ""))
             print(f"  Hero article enhanced with full source text")
+        else:
+            print(f"  Enhancement skipped: Claude returned explanation, keeping original")
     except Exception as e:
         print(f"  Enhancement failed ({e}), keeping original")
     return hero
