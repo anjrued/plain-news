@@ -1027,7 +1027,18 @@ def main():
                 stops2 = {"the","a","an","in","of","for","to","and","or","on","at","is","was","are","were","that","this","with"}
                 hl_tok = set(re.sub(r"[^a-z0-9 ]", " ", hero_headline.lower()).split()) - stops2
                 src_tok = set(re.sub(r"[^a-z0-9 ]", " ", source_text[:500].lower()).split()) - stops2
-                if len(hl_tok & src_tok) >= 3:
+                # Geographic mismatch check — key country/place names must not conflict
+                geo_words = {"china","chinese","russia","russian","ukraine","ukrainian","iran","israeli","israel",
+                             "australia","australian","india","indian","france","french","germany","german",
+                             "britain","british","uk","japan","japanese","brazil","mexican","mexico",
+                             "congo","ebola","africa","african","europe","european","california","texas",
+                             "florida","washington","london","paris","beijing","moscow","gaza"}
+                hl_geo  = hl_tok & geo_words
+                src_geo = src_tok & geo_words
+                geo_conflict = bool(hl_geo) and bool(src_geo) and not (hl_geo & src_geo)
+                if geo_conflict:
+                    print(f"  Enhancement skipped: geographic mismatch ({hl_geo} vs {src_geo})")
+                elif len(hl_tok & src_tok) >= 3:
                     data["hero"] = enhance_hero_article(data["hero"], source_text)
                     print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
                 else:
