@@ -624,6 +624,9 @@ def enhance_hero_article(hero, full_text):
         "but paraphrase everything else in plain clear English. "
         "Do not invent details not in the source. Do not comment on absent information. "
         "Do not copy newsletter openers like 'Good morning' or any introductory salutation. "
+        "CRITICAL: The article must be consistent with the headline. If the headline names a specific "
+        "location, person, or event, the article must be about that exact location, person, or event. "
+        "Never substitute a different location or incident even if the source material describes something similar. "
         "Keep it 420-480 words. Plain direct English. No em dashes."
     )
     try:
@@ -1043,7 +1046,8 @@ def main():
                              "australia","australian","india","indian","france","french","germany","german",
                              "britain","british","uk","japan","japanese","brazil","mexican","mexico",
                              "congo","ebola","africa","african","europe","european","california","texas",
-                             "florida","washington","london","paris","beijing","moscow","gaza"}
+                             "florida","washington","london","paris","beijing","moscow","gaza",
+                             "maralago","capitol","pentagon","whitehouse","nasa","nascar","senate","congress"}
                 hl_geo  = hl_tok & geo_words
                 src_geo = src_tok & geo_words
                 geo_conflict = bool(hl_geo) and bool(src_geo) and not (hl_geo & src_geo)
@@ -1053,7 +1057,7 @@ def main():
                     data["hero"] = enhance_hero_article(data["hero"], source_text)
                     print(f"  Enhanced with: {'Guardian+' if guardian_text else ''}{'bank+' if bank_content else ''}{'related' if related_text else ''}")
                 else:
-                    print(f"  Enhancement skipped: source text not relevant to headline")
+                    print(f"  Enhancement skipped: insufficient keyword overlap")
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
