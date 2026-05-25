@@ -70,11 +70,13 @@ CATEGORIES = {
     "politics": {
         "label": "Politics",
         "feeds": [
-            "https://rss.politico.com/politics-news.xml",
-            "https://thehill.com/feed/",
-            "https://feeds.npr.org/1014/rss.xml",
+            "https://rss.politico.com/white-house.xml",
             "https://rss.politico.com/congress.xml",
+            "https://rss.politico.com/politics-news.xml",
             "https://thehill.com/homenews/administration/feed/",
+            "https://thehill.com/homenews/senate/feed/",
+            "https://thehill.com/homenews/house/feed/",
+            "https://feeds.npr.org/1014/rss.xml",
         ],
     },
 }
@@ -557,6 +559,21 @@ Return ONLY valid JSON:
 
     decay_score(data["hero"])
     for card in data.get("cards", []): decay_score(card)
+
+    # Hard cap: if hero published field shows May 21 or older, force score to 4
+    hero_pub = data["hero"].get("published", "")
+    if hero_pub and not any(w in hero_pub.lower() for w in ["minute", "hour", "today", "yesterday"]):
+        # Published field is showing a date like "May 21" — more than 2 days old
+        try:
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+            # If it's showing a month/day format it's at least 2 days old
+            import re as _re
+            if _re.match(r"[A-Z][a-z]{2} \d+", hero_pub):
+                data["hero"]["urgency_score"] = min(data["hero"].get("urgency_score", 5), 4)
+                print(f"  Hard age cap applied: hero is from {hero_pub}")
+        except Exception:
+            pass
 
     return data
 
