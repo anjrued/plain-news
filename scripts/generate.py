@@ -432,11 +432,21 @@ def strip_markdown(text, headline=""):
 
 def generate_category_content(category_key, category_label, headlines):
     # Build headlines with raw published strings for Claude to copy back
+    def sanitize(text):
+        if not text:
+            return ""
+        import re as _re
+        # Remove all control characters and problematic escape sequences
+        text = text.replace("\\", " ").replace('"', "'").replace("\n", " ").replace("\r", " ").replace("\t", " ")
+        # Remove non-printable characters
+        text = "".join(c for c in text if c.isprintable())
+        return text.strip()
+
     def hl_line(i, h):
-        pub = h.get("published", "").replace("\\", "").replace('"', "'")
+        pub     = sanitize(h.get("published", ""))
         pub_str = f" [pub:{pub}]" if pub else ""
-        title   = h.get("title", "").replace("\\", "").replace('"', "'")
-        summary = h.get("summary", "").replace("\\", "").replace('"', "'")
+        title   = sanitize(h.get("title", ""))
+        summary = sanitize(h.get("summary", ""))
         return f"{i+1}. {title}{pub_str}\n   {summary[:550]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
     # Final safety pass — remove any remaining characters that break JSON
