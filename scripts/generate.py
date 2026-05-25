@@ -585,10 +585,10 @@ def enhance_card(card, content_bank, headlines, is_top=False):
         return card
 
     # Guardian API for top card only
-    guardian_text = fetch_guardian_article(headline) if is_top else ""
+    guardian_text = fetch_guardian_article(headline, max_words=400) if is_top else ""
 
     # Gather content bank matches
-    bank_content = find_content(headline, content_bank, max_entries=3)
+    bank_content = find_content(headline, content_bank, max_entries=2)
 
     # Gather related RSS summaries
     stops = {"that","this","with","from","have","been","said","will","more",
@@ -598,8 +598,8 @@ def enhance_card(card, content_bank, headlines, is_top=False):
     for h in headlines:
         h_tokens = set(re.sub(r"[^a-z0-9 ]", " ", h.get("title","").lower()).split()) - stops
         if len(hl_tokens & h_tokens) >= 2:
-            related_parts.append(h.get("title","") + ". " + h.get("summary",""))
-    related_text = " | ".join(related_parts[:4])
+            related_parts.append(h.get("title","") + ". " + h.get("summary","")[:200])
+    related_text = " | ".join(related_parts[:3])
 
     source_parts = [p for p in [guardian_text, bank_content, related_text] if p]
     source_text  = "\n\n".join(source_parts)
