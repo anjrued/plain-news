@@ -394,7 +394,7 @@ Return ONLY valid JSON:
 
     response = client.messages.create(
         model="claude-sonnet-4-5",
-        max_tokens=2500,
+        max_tokens=1800,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -732,7 +732,7 @@ def global_rank(all_cards):
     )
     try:
         resp = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-haiku-4-5-20251001",
             max_tokens=600,
             messages=[{"role": "user", "content": prompt}]
         )
