@@ -277,6 +277,13 @@ def extract_publisher_url(entry):
     return link
 
 
+def sanitize_text(text):
+    """Remove characters that break JSON parsing."""
+    if not text:
+        return ""
+    return text.replace("\\", " ").replace('"', "'").replace("\n", " ").replace("\r", " ").replace("\t", " ").strip()
+
+
 def clean_summary(text):
     """Strip navigation text, bylines, HTML tags, and noise from RSS summaries."""
     if not text:
@@ -429,6 +436,8 @@ def generate_category_content(category_key, category_label, headlines):
         pub_str = f" [pub:{pub}]" if pub else ""
         return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:550]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
+    # Final safety pass — remove any remaining characters that break JSON
+    headlines_text = headlines_text.replace("\\", " ")
 
     prompt = f"""Top headlines for {category_label}:
 
@@ -560,7 +569,7 @@ def build_content_bank():
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries[:25]:
-                title = entry.get("title", "").strip()
+                title = sanitize_text(entry.get("title", ""))
                 if not title or title.lower() in seen:
                     continue
                 seen.add(title.lower())
