@@ -223,15 +223,24 @@ def build_image_bank():
 
 
 def match_image(headline, image_bank, cat_key=""):
-    """Fuzzy-match a headline against the image bank."""
+    """Fuzzy-match a headline against the image bank with geographic conflict detection."""
     stops = {"that","this","with","from","have","been","after","over","into","says","said","will","than","more","also","when","were","they","their","about"}
+    geo_words = {"ukraine","ukrainian","russia","russian","china","chinese","israel","israeli","gaza","iran","iranian",
+                 "france","french","germany","german","australia","australian","india","indian","pakistan","pakistani",
+                 "korea","korean","japan","japanese","mexico","mexican","brazil","brazilian","cuba","cuban"}
     def tokens(text):
         return set(w.lower().strip(".,;:()") for w in text.split() if len(w) > 3 and w.lower() not in stops)
     hw = tokens(headline)
+    hl_geo = hw & geo_words
     best_score, best_img = 0, ""
     for entry in image_bank:
-        overlap = len(hw & tokens(entry["title"]))
+        entry_tokens = tokens(entry["title"])
+        overlap = len(hw & entry_tokens)
         if overlap > best_score and overlap >= 2:
+            # Geographic conflict check — don't use Ukraine photo for White House story
+            entry_geo = entry_tokens & geo_words
+            if hl_geo and entry_geo and not (hl_geo & entry_geo):
+                continue  # Geographic mismatch — skip this image
             best_score = overlap
             best_img   = upscale_image_url(entry["image_url"])
     return best_img
