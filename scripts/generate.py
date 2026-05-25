@@ -438,11 +438,15 @@ def generate_category_content(category_key, category_label, headlines):
         if not text:
             return ""
         import re as _re
-        # Remove all control characters and problematic escape sequences
+        # Remove characters that break JSON
         text = text.replace("\\", " ").replace('"', "'").replace("\n", " ").replace("\r", " ").replace("\t", " ")
         # Remove non-printable characters
         text = "".join(c for c in text if c.isprintable())
-        return text.strip()
+        # Remove any remaining control sequences
+        text = _re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", text)
+        # Collapse whitespace
+        text = _re.sub(r"\s+", " ", text).strip()
+        return text
 
     def hl_line(i, h):
         pub     = sanitize(h.get("published", ""))
@@ -501,7 +505,14 @@ Return ONLY valid JSON:
             raw = raw[4:]
     raw = raw.strip()
 
-    data = json.loads(raw)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        # Try cleaning the response before giving up
+        import re as _re
+        cleaned = raw.encode("ascii", "ignore").decode("ascii")
+        cleaned = _re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", cleaned)
+        data = json.loads(cleaned)
     data["category_key"]   = category_key
     data["category_label"] = category_label
 
