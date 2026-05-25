@@ -485,8 +485,13 @@ Return ONLY valid JSON:
     response = client.messages.create(
         model="claude-sonnet-4-5",
         max_tokens=1800,
-        system=SYSTEM_PROMPT,
+        system=[{
+            "type": "text",
+            "text": SYSTEM_PROMPT,
+            "cache_control": {"type": "ephemeral"}
+        }],
         messages=[{"role": "user", "content": prompt}],
+        extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
     )
 
     raw = response.content[0].text.strip()
