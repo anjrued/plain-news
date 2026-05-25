@@ -364,6 +364,7 @@ ACCURACY — never violate:
 - If a detail is unknown, omit it entirely. Never write about missing information in any form.
 - Never fabricate quotes, statistics, names, or events.
 - Use past tense for past events. Frame updates as updates, not new events.
+- Never reference a specific day of the week (Monday, Tuesday, etc.) unless it appears explicitly in the source material. Do not infer the day from context or current date knowledge.
 
 STYLE — never violate:
 - Never editorialize. No loaded words: controversial, rocky, embattled, slammed, blasted, chaotic, failed.
@@ -525,12 +526,18 @@ Return ONLY valid JSON:
             now = datetime.now(timezone.utc)
             hrs = (now - dt).total_seconds() / 3600
             headline = item.get("headline", "").lower()
-            fresh_words = ["confirms","confirmed","announces","announced","reveals","charges",
-                          "arrested","resigns","fired","dies","dead","breaks","exclusive","new details"]
+            fresh_words = ["confirms","confirmed","announces","announced","reveals","revealed",
+                          "charges","charged","arrested","arrest","resigns","resigned","fired",
+                          "dies","dead","breaks","exclusive","new details","emerges","emerged",
+                          "update","updates","discovered","uncovers","uncovered","identified",
+                          "named","ruled","plot","conspiracy","investigation","indicted","sentenced",
+                          "found","linked","connected","motive","cause"]
             is_fresh = any(w in headline for w in fresh_words)
             if not is_fresh:
                 if hrs > 48: score = min(score, 4)
-                elif hrs > 24: score = min(score, 6)
+                elif hrs > 36: score = min(score, 5)
+                elif hrs > 24: score = min(score, 7)
+                elif hrs > 12: score = min(score, 8)
         except Exception:
             pass
         item["urgency_score"] = score
