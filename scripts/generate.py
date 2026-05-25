@@ -301,6 +301,8 @@ def clean_summary(text):
     ]
     for pattern in noise_patterns:
         text = _re.sub(pattern, "", text, flags=_re.MULTILINE)
+    # Remove characters that break JSON parsing
+    text = text.replace("\\", " ").replace('"', "'").replace("\n", " ").replace("\r", " ").replace("\t", " ")
     # Collapse whitespace
     text = _re.sub(r"\s+", " ", text).strip()
     return text
