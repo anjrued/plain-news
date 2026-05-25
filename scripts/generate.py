@@ -372,7 +372,7 @@ Tasks:
 1. Pick the single most important/urgent story.
 2. Write an accurate headline reflecting the current state (frame updates as updates, not new events).
 3. Write a 420-480 word factual article. Use only confirmed facts from the source. Write in your own words.
-4. For the next {CARDS_PER_CATEGORY} most important stories write a teaser (one sentence), body (two short paragraphs ~120 words), and urgency_score (1-10).
+4. For the next {CARDS_PER_CATEGORY} most important stories write a teaser (one sentence), body (two short paragraphs ~120 words), and urgency_score (1-10). Card bodies must only contain confirmed facts from the headline and summary. Never mention missing, unavailable, or unconfirmed information in any form. If details are limited, write fewer words rather than padding with absence language.
 
 Return ONLY valid JSON:
 {{
@@ -574,6 +574,69 @@ def fetch_article_text(url, max_words=900):
     """Article fetch disabled — base articles from RSS summaries only."""
     return ""
 
+
+
+def enhance_card(card, content_bank, headlines, is_top=False):
+    """Enrich a card body using content bank, related RSS summaries, and optionally Guardian.
+    Uses Haiku for cost efficiency.
+    """
+    headline = card.get("headline", "")
+    if not headline:
+        return card
+
+    # Guardian API for top card only
+    guardian_text = fetch_guardian_article(headline) if is_top else ""
+
+    # Gather content bank matches
+    bank_content = find_content(headline, content_bank, max_entries=3)
+
+    # Gather related RSS summaries
+    stops = {"that","this","with","from","have","been","said","will","more",
+             "also","when","were","they","their","about","says","just","after"}
+    hl_tokens = set(re.sub(r"[^a-z0-9 ]", " ", headline.lower()).split()) - stops
+    related_parts = []
+    for h in headlines:
+        h_tokens = set(re.sub(r"[^a-z0-9 ]", " ", h.get("title","").lower()).split()) - stops
+        if len(hl_tokens & h_tokens) >= 2:
+            related_parts.append(h.get("title","") + ". " + h.get("summary",""))
+    related_text = " | ".join(related_parts[:4])
+
+    source_parts = [p for p in [guardian_text, bank_content, related_text] if p]
+    source_text  = "\n\n".join(source_parts)
+
+    if not source_text or len(source_text.split()) < 50:
+        return card
+
+    # Relevance check
+    stops2 = {"the","a","an","in","of","for","to","and","or","on","at","is","was","are","were","that","this","with"}
+    hl_tok  = set(re.sub(r"[^a-z0-9 ]", " ", headline.lower()).split()) - stops2
+    src_tok = set(re.sub(r"[^a-z0-9 ]", " ", source_text[:400].lower()).split()) - stops2
+    if len(hl_tok & src_tok) < 2:
+        return card
+
+    try:
+        body = card.get("body", "")
+        prompt = (
+            f"You wrote this news card about: {headline}\n\n"
+            f"Your original card text:\n\n{body}\n\n"
+            f"Here is additional source material:\n\n{source_text}\n\n"
+            "If the source is about a different story, return the original card text unchanged. "
+            "Otherwise rewrite the card body in two short paragraphs (~120 words total) "
+            "using only confirmed facts from the source. Write in your own words. "
+            "Never mention missing or unavailable information. Stop when confirmed facts run out."
+        )
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        enhanced = resp.content[0].text.strip()
+        explanation_signals = ["i cannot rewrite", "source material", "does not match", "cannot proceed"]
+        if enhanced and not any(s in enhanced.lower()[:150] for s in explanation_signals):
+            card["body"] = strip_markdown(enhanced, headline)
+    except Exception as e:
+        pass  # Keep original card on any error
+    return card
 
 
 def enhance_hero_article(hero, full_text):
@@ -1030,6 +1093,10 @@ def main():
 
             all_categories.append(data)
             print(f"  Hero: {data['hero']['headline'][:60]}... (urgency: {data['hero'].get('urgency_score')}, image: {'yes' if img else 'no'})")
+
+            # Enrich cards — Guardian for top card, content bank for all
+            for i, card in enumerate(data.get("cards", [])):
+                enhance_card(card, content_bank, headlines, is_top=(i == 0))
         except Exception as e:
             print(f"  Claude error for {cat_config['label']}: {e}")
             continue
