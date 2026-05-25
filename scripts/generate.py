@@ -277,6 +277,35 @@ def extract_publisher_url(entry):
     return link
 
 
+def clean_summary(text):
+    """Strip navigation text, bylines, HTML tags, and noise from RSS summaries."""
+    if not text:
+        return ""
+    import re as _re
+    # Remove HTML tags
+    text = _re.sub(r"<[^>]+>", " ", text)
+    # Remove URLs
+    text = _re.sub(r"https?://\S+", "", text)
+    # Remove common RSS noise patterns
+    noise_patterns = [
+        r"(?i)read more.*$",
+        r"(?i)click here.*$",
+        r"(?i)continue reading.*$",
+        r"(?i)\[\+\d+ chars\].*$",
+        r"(?i)^by [A-Z][a-z]+ [A-Z][a-z]+",
+        r"(?i)related articles?:.*$",
+        r"(?i)also read:.*$",
+        r"(?i)share this:.*$",
+        r"(?i)follow us.*$",
+        r"&amp;|&lt;|&gt;|&quot;|&#\d+;",
+    ]
+    for pattern in noise_patterns:
+        text = _re.sub(pattern, "", text, flags=_re.MULTILINE)
+    # Collapse whitespace
+    text = _re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
     """Pull headlines from feeds in priority order. First feed fills most slots."""
     seen, entries = set(), []
@@ -290,7 +319,7 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                 seen.add(title.lower())
                 entries.append({
                     "title":     title,
-                    "summary":   entry.get("summary", entry.get("description", ""))[:800],
+                    "summary":   clean_summary(entry.get("summary", entry.get("description", "")))[:800],
                     "link":      extract_publisher_url(entry),
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
@@ -334,6 +363,32 @@ STYLE — never violate:
 - Report what happened. Let readers draw their own conclusions."""
 
 
+def strip_absence_language(text):
+    """Remove sentences containing absence/uncertainty language from article text."""
+    if not text:
+        return text
+    absence_patterns = [
+        "no information was", "no details were", "no details have",
+        "details were not", "details have not", "details are not",
+        "has not been confirmed", "have not been confirmed",
+        "was not disclosed", "were not disclosed",
+        "it remains unclear", "it is unclear", "remains unknown",
+        "officials have not", "has not responded", "did not respond",
+        "not immediately available", "not yet available",
+        "could not be reached", "could not be confirmed",
+        "no official statement", "no statement has",
+        "reporting is ongoing", "investigation is ongoing",
+    ]
+    sentences = text.replace("\n\n", "<<PARA>>").split(".")
+    cleaned = []
+    for s in sentences:
+        s_lower = s.lower()
+        if not any(p in s_lower for p in absence_patterns):
+            cleaned.append(s)
+    result = ".".join(cleaned)
+    return result.replace("<<PARA>>", "\n\n").strip()
+
+
 def strip_markdown(text, headline=""):
     """Remove markdown formatting and headline restatements from article text."""
     if not text:
@@ -370,7 +425,7 @@ def generate_category_content(category_key, category_label, headlines):
     def hl_line(i, h):
         pub = h.get("published", "")
         pub_str = f" [pub:{pub}]" if pub else ""
-        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:350]}"
+        return f"{i+1}. {h['title']}{pub_str}\n   {h['summary'][:550]}"
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
 
     prompt = f"""Top headlines for {category_label}:
@@ -381,7 +436,7 @@ Tasks:
 1. Pick the single most important/urgent story.
 2. Write an accurate headline reflecting the current state (frame updates as updates, not new events).
 3. Write a 420-480 word factual article. Use only confirmed facts from the source. Write in your own words.
-4. For the next {CARDS_PER_CATEGORY} most important stories write a teaser (one sentence), body (two short paragraphs ~120 words), and urgency_score (1-10). Card bodies must only contain confirmed facts from the headline and summary. Never mention missing, unavailable, or unconfirmed information in any form. If details are limited, write fewer words rather than padding with absence language.
+4. For the next {CARDS_PER_CATEGORY} most important stories write a teaser (one sentence), body (two short paragraphs ~120 words), and urgency_score (1-10). Card bodies must only contain confirmed facts from the headline and summary. Never use phrases like "no information was disclosed", "details were not available", "it remains unclear", "has not been confirmed", "officials have not commented", or any similar absence language. If details are limited write fewer words and stop — do not pad.
 
 Return ONLY valid JSON:
 {{
@@ -443,7 +498,7 @@ Return ONLY valid JSON:
     data["hero"]["body"] = strip_markdown(data["hero"].get("body", ""), data["hero"].get("headline", ""))
     for card in data.get("cards", []):
         attach_source(card, headlines)
-        card["body"] = strip_markdown(card.get("body", ""), card.get("headline", ""))
+        card["body"] = strip_absence_language(strip_markdown(card.get("body", ""), card.get("headline", "")))
 
     # Age-based score decay for stale non-breaking stories
     def decay_score(item):
@@ -627,7 +682,9 @@ def enhance_card(card, content_bank, headlines):
             "If the source is about a different story, return the original card text unchanged. "
             "Otherwise rewrite the card body in two short paragraphs (~120 words total) "
             "using only confirmed facts from the source. Write in your own words. "
-            "Never mention missing or unavailable information. Stop when confirmed facts run out."
+            "Never use phrases like 'no information was disclosed', 'details were not available', "
+            "'it remains unclear', 'has not been confirmed', or any similar absence language. "
+            "If details are limited write fewer words and stop — do not pad."
         )
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
