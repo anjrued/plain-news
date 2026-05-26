@@ -669,12 +669,11 @@ Return ONLY valid JSON:
             now = datetime.now(timezone.utc)
             hrs = (now - dt).total_seconds() / 3600
             headline = item.get("headline", "").lower()
-            fresh_words = ["confirms","confirmed","announces","announced","reveals","revealed",
-                          "charges","charged","arrested","arrest","resigns","resigned","fired",
-                          "dies","dead","breaks","exclusive","new details","emerges","emerged",
-                          "update","updates","discovered","uncovers","uncovered","identified",
-                          "named","ruled","plot","conspiracy","investigation","indicted","sentenced",
-                          "found","linked","connected","motive","cause"]
+            fresh_words = ["confirms","confirmed","announces","announced","charges","charged",
+                          "arrested","arrest","resigns","resigned","fired","breaks","exclusive",
+                          "new details","emerges","emerged","discovered","uncovers","uncovered",
+                          "identified","named","ruled","plot","conspiracy","indicted","sentenced",
+                          "found guilty","linked","motive","cause of death"]
             is_fresh = any(w in headline for w in fresh_words)
             if not is_fresh:
                 if hrs > 48: score = min(score, 4)
