@@ -73,13 +73,13 @@ CATEGORIES = {
     "politics": {
         "label": "Politics",
         "feeds": [
-            "https://rss.politico.com/white-house.xml",
-            "https://rss.politico.com/congress.xml",
-            "https://rss.politico.com/politics-news.xml",
+            "https://thehill.com/feed/",
             "https://thehill.com/homenews/administration/feed/",
             "https://thehill.com/homenews/senate/feed/",
             "https://thehill.com/homenews/house/feed/",
             "https://feeds.npr.org/1014/rss.xml",
+            "https://rss.politico.com/white-house.xml",
+            "https://rss.politico.com/congress.xml",
             "https://feeds.washingtonpost.com/rss/politics",
             "https://www.axios.com/feeds/feed.rss",
         ],
@@ -428,13 +428,14 @@ def clean_summary(text):
 
 
 def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
-    """Pull headlines from feeds in priority order. First feed fills most slots."""
+    """Pull headlines from all feeds, deduplicate, then limit."""
     seen, entries = set(), []
     for url in feeds:
         try:
             feed = feedparser.parse(url)
-            for entry in feed.entries:
-                title = entry.get("title", "").strip()
+            count = 0
+            for entry in feed.entries[:15]:
+                title = sanitize_text(entry.get("title", "").strip())
                 if not title or title.lower() in seen:
                     continue
                 seen.add(title.lower())
@@ -445,13 +446,19 @@ def fetch_headlines(feeds, limit=HEADLINES_PER_CATEGORY):
                     "image_url": extract_image(entry),
                     "published": entry.get("published", ""),
                 })
-                if len(entries) >= limit:
-                    break
+                count += 1
         except Exception as e:
             print(f"  Feed error ({url[:60]}): {e}")
-        if len(entries) >= limit:
-            break
-    return entries
+    # Sort by published date (freshest first) then limit
+    def pub_sort(h):
+        try:
+            from email.utils import parsedate_to_datetime
+            from datetime import timezone
+            return parsedate_to_datetime(h["published"]).astimezone(timezone.utc).timestamp()
+        except Exception:
+            return 0
+    entries.sort(key=pub_sort, reverse=True)
+    return entries[:limit]
 
 
 # -- CLAUDE EDITORIAL ENGINE --
@@ -581,7 +588,7 @@ def generate_category_content(category_key, category_label, headlines):
             stale = _is_stale(h)
             print(f"    [stale={stale}] [{h.get('published','NO DATE')}] {h.get('title','')[:55]}")
     fresh = [h for h in headlines if not _is_stale(h)]
-    headlines = fresh if len(fresh) >= 6 else headlines
+    headlines = fresh if len(fresh) >= 1 else headlines
 
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
     # Final safety pass — remove any remaining characters that break JSON
