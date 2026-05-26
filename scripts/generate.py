@@ -562,6 +562,19 @@ def generate_category_content(category_key, category_label, headlines):
         title   = sanitize(h.get("title", ""))
         summary = sanitize(h.get("summary", ""))
         return f"{i+1}. {title}{pub_str}\n   {summary[:550]}"
+    # Pre-filter headlines older than 48 hours before Claude sees them
+    from datetime import timezone as _tz
+    _now_utc = datetime.now(_tz.utc)
+    def _is_stale(h):
+        try:
+            from email.utils import parsedate_to_datetime
+            dt = parsedate_to_datetime(h.get("published","")).astimezone(_tz.utc)
+            return (_now_utc - dt).total_seconds() > 48 * 3600
+        except Exception:
+            return False
+    fresh = [h for h in headlines if not _is_stale(h)]
+    headlines = fresh if len(fresh) >= 6 else headlines
+
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
     # Final safety pass — remove any remaining characters that break JSON
     headlines_text = headlines_text.replace("\\", " ")
