@@ -504,6 +504,10 @@ Return ONLY valid JSON:
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
+    # Sanitize Claude's response before parsing
+    import re as _re2
+    raw = raw.replace("\\n", " ").replace("\\t", " ")
+    raw = _re2.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", "", raw)
 
     try:
         data = json.loads(raw)
