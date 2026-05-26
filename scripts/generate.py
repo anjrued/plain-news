@@ -80,6 +80,8 @@ CATEGORIES = {
             "https://thehill.com/homenews/senate/feed/",
             "https://thehill.com/homenews/house/feed/",
             "https://feeds.npr.org/1014/rss.xml",
+            "https://feeds.washingtonpost.com/rss/politics",
+            "https://www.axios.com/feeds/feed.rss",
         ],
     },
 }
@@ -346,7 +348,7 @@ def match_image(headline, image_bank, cat_key=""):
             continue
         entry_tokens = tokens(entry["title"])
         overlap = len(hw & entry_tokens)
-        if overlap > best_score and overlap >= 2:
+        if overlap > best_score and overlap >= 3:
             entry_geo = entry_tokens & geo_words
             if hl_geo and entry_geo and not (hl_geo & entry_geo):
                 continue
@@ -1347,6 +1349,19 @@ def main():
     for cat_key, cat_config in CATEGORIES.items():
         print(f"Processing: {cat_config['label']}...")
         headlines = fetch_headlines(cat_config["feeds"])
+        # Filter headlines older than 48 hours — unparseable dates are treated as stale
+        from datetime import timezone as _tz2
+        _now2 = datetime.now(_tz2.utc)
+        def _headline_stale(h):
+            try:
+                from email.utils import parsedate_to_datetime
+                dt = parsedate_to_datetime(h.get("published","")).astimezone(_tz2.utc)
+                return (_now2 - dt).total_seconds() > 48 * 3600
+            except Exception:
+                return True  # Can't parse date = treat as stale, exclude it
+        fresh_h = [h for h in headlines if not _headline_stale(h)]
+        if len(fresh_h) >= 6:
+            headlines = fresh_h
         if not headlines:
             print(f"  No headlines found for {cat_config['label']}, skipping.")
             continue
