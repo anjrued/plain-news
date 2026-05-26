@@ -514,9 +514,24 @@ Return ONLY valid JSON:
     except json.JSONDecodeError:
         # Try cleaning the response before giving up
         import re as _re
+        # Strategy 1: strip non-ASCII
         cleaned = raw.encode("ascii", "ignore").decode("ascii")
         cleaned = _re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", cleaned)
-        data = json.loads(cleaned)
+        try:
+            data = json.loads(cleaned)
+        except json.JSONDecodeError:
+            # Strategy 2: find the JSON object boundaries and re-extract
+            try:
+                start = raw.index("{")
+                end   = raw.rindex("}") + 1
+                data  = json.loads(raw[start:end])
+            except (ValueError, json.JSONDecodeError):
+                # Strategy 3: replace single quotes with double quotes
+                try:
+                    fixed = _re.sub(r"'([^']*)':", r'"\1":', raw)
+                    data  = json.loads(fixed)
+                except json.JSONDecodeError as e:
+                    raise e
     data["category_key"]   = category_key
     data["category_label"] = category_label
 
