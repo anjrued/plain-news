@@ -688,20 +688,20 @@ Return ONLY valid JSON:
     decay_score(data["hero"])
     for card in data.get("cards", []): decay_score(card)
 
-    # Hard cap: if hero published field shows May 21 or older, force score to 4
+    # Hard cap based on formatted published field
     hero_pub = data["hero"].get("published", "")
-    if hero_pub and not any(w in hero_pub.lower() for w in ["minute", "hour", "today", "yesterday"]):
-        # Published field is showing a date like "May 21" — more than 2 days old
-        try:
-            from datetime import timezone
-            now = datetime.now(timezone.utc)
-            # If it's showing a month/day format it's at least 2 days old
-            import re as _re
-            if _re.match(r"[A-Z][a-z]{2} \d+", hero_pub):
-                data["hero"]["urgency_score"] = min(data["hero"].get("urgency_score", 5), 4)
-                print(f"  Hard age cap applied: hero is from {hero_pub}")
-        except Exception:
-            pass
+    if hero_pub:
+        is_fresh     = any(w in hero_pub.lower() for w in ["minute", "hour", "a few"])
+        is_today     = bool(__import__("re").search(r"^\d{1,2}:\d{2}\s*(am|pm)", hero_pub.lower().strip()))
+        is_yesterday = "yesterday" in hero_pub.lower()
+        is_old       = not is_fresh and not is_today and not is_yesterday
+        current_score = data["hero"].get("urgency_score", 5)
+        if is_old:
+            data["hero"]["urgency_score"] = min(current_score, 4)
+            print(f"  Hard age cap applied (old): hero is from {hero_pub}")
+        elif is_yesterday:
+            data["hero"]["urgency_score"] = min(current_score, 7)
+            print(f"  Soft age cap applied (yesterday): hero is from {hero_pub}")
 
     return data
 
