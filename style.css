@@ -82,15 +82,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 44px 24px 80px; }
 /* -- HERO -- */
 .hero { border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; cursor: pointer; }
 .hero-inner { display: block; overflow: hidden; cursor: pointer; }
-.hero-image {
-  float: right;
-  width: 400px;
-  height: 280px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 6px 0 20px 32px;
-  display: block;
-}
+figure.hero-image-wrap { float: right; margin: 6px 0 20px 32px; padding: 0; border: none; }
+.hero-image { width: 400px; height: 280px; object-fit: cover; border-radius: 8px; display: block; }
+.img-credit { display: block; font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 4px; font-style: italic; }
 .tag { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
 .hero h1 { font-family: "Fraunces", serif; font-size: clamp(30px, 4.5vw, 52px); font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 16px; transition: color 0.15s; }
 .hero-summary { font-size: 16px; color: var(--text-secondary); line-height: 1.75; margin-bottom: 20px; }
