@@ -221,6 +221,69 @@ def upscale_image_url(url):
     return re.sub(r"/\d{2,3}/", "/1024/", url, count=1)
 
 
+FEED_PUBLISHER_MAP = {
+    "bbci.co.uk":        "BBC News",
+    "theguardian.com":   "The Guardian",
+    "espn.com":          "ESPN",
+    "cbssports.com":     "CBS Sports",
+    "npr.org":           "NPR",
+    "techcrunch.com":    "TechCrunch",
+    "arstechnica.com":   "Ars Technica",
+    "theverge.com":      "The Verge",
+    "variety.com":       "Variety",
+    "rollingstone.com":  "Rolling Stone",
+    "yahoo.com":         "Yahoo News",
+    "reuters.com":       "Reuters",
+    "apnews.com":        "AP News",
+    "nytimes.com":       "The New York Times",
+    "washingtonpost.com":"The Washington Post",
+    "politico.com":      "Politico",
+    "thehill.com":       "The Hill",
+    "statnews.com":      "STAT News",
+    "forbes.com":        "Forbes",
+    "bloomberg.com":     "Bloomberg",
+    "wsj.com":           "The Wall Street Journal",
+    "cnn.com":           "CNN",
+    "foxnews.com":       "Fox News",
+    "nbcnews.com":       "NBC News",
+    "abcnews.go.com":    "ABC News",
+    "cbsnews.com":       "CBS News",
+    "usatoday.com":      "USA Today",
+    "time.com":          "Time",
+    "newsweek.com":      "Newsweek",
+    "theatlantic.com":   "The Atlantic",
+    "axios.com":         "Axios",
+    "buzzfeednews.com":  "BuzzFeed News",
+    "huffpost.com":      "HuffPost",
+    "vox.com":           "Vox",
+    "slate.com":         "Slate",
+    "wired.com":         "Wired",
+    "zdnet.com":         "ZDNet",
+    "engadget.com":      "Engadget",
+    "9to5mac.com":       "9to5Mac",
+    "macrumors.com":     "MacRumors",
+    "nasa.gov":          "NASA",
+    "scientificamerican.com": "Scientific American",
+    "nature.com":        "Nature",
+    "bbc.com":           "BBC News",
+    "independent.co.uk": "The Independent",
+    "telegraph.co.uk":   "The Telegraph",
+    "ft.com":            "Financial Times",
+    "economist.com":     "The Economist",
+}
+
+
+def get_image_credit(source_url):
+    """Return a clean publisher name from a feed URL. Returns empty string if unknown."""
+    if not source_url:
+        return ""
+    source_lower = source_url.lower()
+    for domain, name in FEED_PUBLISHER_MAP.items():
+        if domain in source_lower:
+            return name
+    return ""
+
+
 def build_image_bank():
     """Fetch images from RSS feeds that reliably include them (BBC, ESPN, TechCrunch)."""
     bank = []
@@ -270,7 +333,7 @@ def match_image(headline, image_bank, cat_key=""):
     hw = tokens(headline)
     hl_geo = hw & geo_words
     blocked_sources = cat_source_blocks.get(cat_key, [])
-    best_score, best_img = 0, ""
+    best_score, best_img, best_credit = 0, "", ""
 
     for entry in image_bank:
         source = entry.get("source", "").lower()
@@ -283,9 +346,10 @@ def match_image(headline, image_bank, cat_key=""):
             entry_geo = entry_tokens & geo_words
             if hl_geo and entry_geo and not (hl_geo & entry_geo):
                 continue
-            best_score = overlap
-            best_img   = upscale_image_url(entry["image_url"])
-    return best_img
+            best_score   = overlap
+            best_img     = upscale_image_url(entry["image_url"])
+            best_credit  = get_image_credit(entry.get("source", ""))
+    return best_img, best_credit
 
 
 def find_image(headline, entries):
@@ -998,7 +1062,9 @@ def render_index(all_categories, market_data=None, market_live=False):
         preview    = hero["body"][:380].rstrip()
         paragraphs = make_paragraphs(hero["body"])
         img_url    = hero.get("image_url", "")
-        img_html   = f'<img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">' if img_url else ""
+        img_credit = hero.get("image_credit", "")
+        credit_html = f'<span class="img-credit">Photo: {img_credit}</span>' if img_url and img_credit else ""
+        img_html   = f'<div class="hero-image-wrap"><img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">{credit_html}</div>' if img_url else ""
         pub_time   = hero.get("published") or f"Today, {timestamp}"
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
@@ -1217,7 +1283,10 @@ def main():
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
             # Images — source_index already attached image_url, fall back to image bank
-            img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
+            _img_result = match_image(data["hero"]["headline"], image_bank, cat_key)
+            img    = data["hero"].get("image_url") or _img_result[0]
+            credit = get_image_credit(data["hero"].get("image_source", "")) or _img_result[1]
+            data["hero"]["image_credit"] = credit
             # Second fallback: check content bank entries for matching images
             if not img:
                 for entry in content_bank:
@@ -1225,8 +1294,10 @@ def main():
                     hero_words  = [w for w in data["hero"]["headline"].lower().split() if len(w) > 4]
                     if sum(1 for w in hero_words if w in entry_lower) >= 2:
                         # Try to get image from matching content bank entry source feed
-                        img = match_image(entry["title"], image_bank, cat_key)
-                        if img:
+                        _fb = match_image(entry["title"], image_bank, cat_key)
+                        if _fb[0]:
+                            img = _fb[0]
+                            data["hero"]["image_credit"] = _fb[1]
                             break
             data["hero"]["image_url"] = img
 
