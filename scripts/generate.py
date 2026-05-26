@@ -702,7 +702,7 @@ Return ONLY valid JSON:
         if is_old:
             item["urgency_score"] = min(score, 4)
         elif is_yesterday:
-            item["urgency_score"] = min(score, 7)
+            item["urgency_score"] = min(score, 6)
 
     apply_age_cap(data["hero"])
     if data["hero"].get("published", "") and not any(w in data["hero"]["published"].lower() for w in ["minute", "hour", "a few", ":"]):
