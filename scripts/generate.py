@@ -688,20 +688,27 @@ Return ONLY valid JSON:
     decay_score(data["hero"])
     for card in data.get("cards", []): decay_score(card)
 
-    # Hard cap based on formatted published field
-    hero_pub = data["hero"].get("published", "")
-    if hero_pub:
-        is_fresh     = any(w in hero_pub.lower() for w in ["minute", "hour", "a few"])
-        is_today     = bool(__import__("re").search(r"^\d{1,2}:\d{2}\s*(am|pm)", hero_pub.lower().strip()))
-        is_yesterday = "yesterday" in hero_pub.lower()
+    # Age cap function — same logic for heroes and cards
+    def apply_age_cap(item):
+        pub = item.get("published", "")
+        if not pub:
+            return
+        import re as _re
+        is_fresh     = any(w in pub.lower() for w in ["minute", "hour", "a few"])
+        is_today     = bool(_re.search(r"^\d{1,2}:\d{2}\s*(am|pm)", pub.lower().strip()))
+        is_yesterday = "yesterday" in pub.lower()
         is_old       = not is_fresh and not is_today and not is_yesterday
-        current_score = data["hero"].get("urgency_score", 5)
+        score        = item.get("urgency_score", 5)
         if is_old:
-            data["hero"]["urgency_score"] = min(current_score, 4)
-            print(f"  Hard age cap applied (old): hero is from {hero_pub}")
+            item["urgency_score"] = min(score, 4)
         elif is_yesterday:
-            data["hero"]["urgency_score"] = min(current_score, 7)
-            print(f"  Soft age cap applied (yesterday): hero is from {hero_pub}")
+            item["urgency_score"] = min(score, 7)
+
+    apply_age_cap(data["hero"])
+    if data["hero"].get("published", "") and not any(w in data["hero"]["published"].lower() for w in ["minute", "hour", "a few", ":"]):
+        print(f"  Hard age cap applied: hero is from {data['hero']['published']}")
+    for card in data.get("cards", []):
+        apply_age_cap(card)
 
     return data
 
@@ -949,13 +956,15 @@ def global_rank(all_cards):
     """Final global ranking — sends all headlines to Claude for true cross-category ordering."""
     if not all_cards:
         return all_cards
+
+    ranked_input = all_cards
     stories = []
-    for i, c in enumerate(all_cards):
+    for i, c in enumerate(ranked_input):
         cat   = c.get("cat_label", "")
         head  = c.get("headline", "")
         stories.append(f"{i+1}. [{cat}] {head}")
     stories_text = "\n".join(stories)
-    n = len(all_cards)
+    n = len(ranked_input)
     prompt = (
         f"Rank these {n} news stories by true global importance and urgency.\n"
         "This site serves a primarily US audience. The front page hero must be relevant to US readers.\n"
@@ -988,8 +997,8 @@ def global_rank(all_cards):
             i = int(idx) - 1
             if 0 <= i < n and i not in seen:
                 seen.add(i)
-                ranked.append(all_cards[i])
-        for i, card in enumerate(all_cards):
+                ranked.append(ranked_input[i])
+        for i, card in enumerate(ranked_input):
             if i not in seen:
                 ranked.append(card)
         print(f"  Global ranking: {len(ranked)} stories ordered")
