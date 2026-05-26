@@ -123,8 +123,13 @@ IMAGE_BANK_FEEDS = [
     "https://feeds.bbci.co.uk/news/business/rss.xml",
     "https://feeds.bbci.co.uk/news/technology/rss.xml",
     "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+    "https://feeds.bbci.co.uk/news/health/rss.xml",
+    "https://feeds.bbci.co.uk/news/politics/rss.xml",
     "https://feeds.bbci.co.uk/sport/rss.xml",
     "https://feeds.bbci.co.uk/sport/american-football/rss.xml",
+    "https://feeds.bbci.co.uk/sport/baseball/rss.xml",
+    "https://feeds.bbci.co.uk/sport/basketball/rss.xml",
+    "https://feeds.bbci.co.uk/sport/formula1/rss.xml",
     # The Guardian
     "https://www.theguardian.com/world/rss",
     "https://www.theguardian.com/us-news/rss",
@@ -132,23 +137,33 @@ IMAGE_BANK_FEEDS = [
     "https://www.theguardian.com/technology/rss",
     "https://www.theguardian.com/science/rss",
     "https://www.theguardian.com/sport/rss",
+    "https://www.theguardian.com/politics/rss",
+    "https://www.theguardian.com/culture/rss",
     # NPR
     "https://feeds.npr.org/1001/rss.xml",
     "https://feeds.npr.org/1004/rss.xml",
     "https://feeds.npr.org/1006/rss.xml",
+    "https://feeds.npr.org/1014/rss.xml",
     # Sports
     "https://www.espn.com/espn/rss/news",
     "https://www.cbssports.com/rss/headlines",
-    "https://feeds.bbci.co.uk/sport/formula1/rss.xml",
+    "https://www.cbssports.com/nba/rss/headlines",
+    "https://www.cbssports.com/nfl/rss/headlines",
+    "https://www.cbssports.com/mlb/rss/headlines",
     # Tech
     "https://feeds.arstechnica.com/arstechnica/index",
     "https://techcrunch.com/feed/",
     "https://www.theverge.com/rss/index.xml",
     # Entertainment
     "https://variety.com/feed/",
+    "https://www.rollingstone.com/feed/",
     "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
     # Yahoo News (broad aggregator with images)
     "https://news.yahoo.com/rss",
+    "https://news.yahoo.com/rss/politics",
+    "https://news.yahoo.com/rss/world",
+    "https://news.yahoo.com/rss/science",
+    "https://news.yahoo.com/rss/health",
 ]
 CARDS_PER_CATEGORY     = 5
 OUTPUT_DIR             = Path(__file__).parent.parent
@@ -212,7 +227,7 @@ def build_image_bank():
     for url in IMAGE_BANK_FEEDS:
         try:
             feed = feedparser.parse(url)
-            for entry in feed.entries[:20]:
+            for entry in feed.entries[:30]:
                 title = entry.get("title", "").strip()
                 img   = extract_image(entry)
                 if title and img:
@@ -1204,6 +1219,16 @@ def main():
 
             # Images — source_index already attached image_url, fall back to image bank
             img = data["hero"].get("image_url") or match_image(data["hero"]["headline"], image_bank, cat_key)
+            # Second fallback: check content bank entries for matching images
+            if not img:
+                for entry in content_bank:
+                    entry_lower = entry.get("title", "").lower()
+                    hero_words  = [w for w in data["hero"]["headline"].lower().split() if len(w) > 4]
+                    if sum(1 for w in hero_words if w in entry_lower) >= 2:
+                        # Try to get image from matching content bank entry source feed
+                        img = match_image(entry["title"], image_bank, cat_key)
+                        if img:
+                            break
             data["hero"]["image_url"] = img
 
             # Hero enrichment — combine all available sources
