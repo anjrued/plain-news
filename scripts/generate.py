@@ -506,34 +506,23 @@ Return ONLY valid JSON:
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
-    # Sanitize Claude's response before parsing
-    import re as _re2
-    raw = raw.replace("\\n", " ").replace("\\t", " ")
-    raw = _re2.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", "", raw)
 
     try:
-        data = json.loads(raw)
+        data = json.loads(raw, strict=False)
     except json.JSONDecodeError:
-        # Try cleaning the response before giving up
         import re as _re
         # Strategy 1: strip non-ASCII
         cleaned = raw.encode("ascii", "ignore").decode("ascii")
-        cleaned = _re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", cleaned)
         try:
-            data = json.loads(cleaned)
+            data = json.loads(cleaned, strict=False)
         except json.JSONDecodeError:
-            # Strategy 2: find the JSON object boundaries and re-extract
+            # Strategy 2: find JSON object boundaries
             try:
-                start = raw.index("{")
-                end   = raw.rindex("}") + 1
-                data  = json.loads(raw[start:end])
-            except (ValueError, json.JSONDecodeError):
-                # Strategy 3: replace single quotes with double quotes
-                try:
-                    fixed = _re.sub(r"'([^']*)':", r'"\1":', raw)
-                    data  = json.loads(fixed)
-                except json.JSONDecodeError as e:
-                    raise e
+                start = cleaned.index("{")
+                end   = cleaned.rindex("}") + 1
+                data  = json.loads(cleaned[start:end], strict=False)
+            except (ValueError, json.JSONDecodeError) as e:
+                raise e
     data["category_key"]   = category_key
     data["category_label"] = category_label
 
