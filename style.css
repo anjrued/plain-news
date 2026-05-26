@@ -50,6 +50,11 @@ header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-b
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+@media (max-width: 680px) {
+  .ticker-inner { justify-content: flex-start; }
 }
 .ticker-inner::-webkit-scrollbar { display: none; }
 .ticker-label {
