@@ -1048,6 +1048,13 @@ def fetch_market_data():
             print(f"  Market fetch failed ({sym}): {e}")
             results[key] = None
     live = any(v and v["live"] for v in results.values())
+    # Fallback: check actual ET time if Yahoo marketState is unreliable
+    if not live:
+        from datetime import timezone, timedelta
+        et_now = datetime.now(timezone(timedelta(hours=-4)))
+        is_weekday = et_now.weekday() < 5
+        et_hour = et_now.hour + et_now.minute / 60
+        live = is_weekday and 9.5 <= et_hour <= 16.0
     print(f"  Market data: {sum(1 for v in results.values() if v)} symbols fetched, market {'live' if live else 'closed'}")
     return results, live
 
