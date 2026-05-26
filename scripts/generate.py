@@ -713,11 +713,22 @@ Return ONLY valid JSON:
                 item["urgency_score"] = min(score, 4)
             else:
                 item["urgency_score"] = min(score, 6)
-        # Also cap death/obituary stories at 6 even for today — rarely fresh after first report
         elif is_today:
             headline_lower = item.get("headline", "").lower()
-            death_words = ["dies at", "dead at", "obituary", "passed away", "has died"]
-            if any(w in headline_lower for w in death_words):
+            body_lower     = item.get("body", "").lower()[:400]
+            # Check if article body reveals this is actually an old story
+            # Build dynamic past date signals based on current date
+            from datetime import timezone, timedelta
+            _now   = datetime.now(timezone.utc)
+            _dates = [(_now - timedelta(days=d)).strftime("%B %d").lower().replace(" 0", " ") for d in range(2, 14)]
+            _months_gone = [(_now - timedelta(days=d*30)).strftime("%B").lower() for d in range(1, 6)]
+            stale_body_signals = ["last week", "last month", "a week ago", "days ago",
+                                  "on monday", "on tuesday", "on wednesday", "on thursday",
+                                  "on friday", "on saturday", "on sunday"] + _dates + _months_gone
+            body_is_stale = any(s in body_lower for s in stale_body_signals)
+            # Also catch death/obit stories with refreshed timestamps
+            one_time_today = ["dies at", "dead at", "obituary", "passed away", "has died", "killed in", "found dead"]
+            if body_is_stale or any(w in headline_lower for w in one_time_today):
                 item["urgency_score"] = min(score, 6)
 
     apply_age_cap(data["hero"])
