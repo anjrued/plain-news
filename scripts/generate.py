@@ -33,6 +33,7 @@ CATEGORIES = {
     },
     "business": {
         "label": "Business",
+        "front_page_cap": 7,
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/business/rss.xml",
@@ -712,6 +713,12 @@ Return ONLY valid JSON:
                 item["urgency_score"] = min(score, 4)
             else:
                 item["urgency_score"] = min(score, 6)
+        # Also cap death/obituary stories at 6 even for today — rarely fresh after first report
+        elif is_today:
+            headline_lower = item.get("headline", "").lower()
+            death_words = ["dies at", "dead at", "obituary", "passed away", "has died"]
+            if any(w in headline_lower for w in death_words):
+                item["urgency_score"] = min(score, 6)
 
     apply_age_cap(data["hero"])
     if data["hero"].get("published", "") and not any(w in data["hero"]["published"].lower() for w in ["minute", "hour", "a few", ":"]):
@@ -1075,6 +1082,9 @@ def render_index(all_categories, market_data=None, market_live=False):
         return min(score, cap)
     eligible = [c for c in all_categories if is_front_page_eligible(c)]
     top_cat  = max(eligible if eligible else all_categories, key=front_page_score)
+    # If best eligible story scores below 5, include World as fallback
+    if front_page_score(top_cat) < 5:
+        top_cat = max(all_categories, key=front_page_score)
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
     # Build market ticker HTML from server-side data
