@@ -1283,9 +1283,10 @@ def main():
             data = generate_category_content(cat_key, cat_config["label"], headlines)
 
             # Images — source_index already attached image_url, fall back to image bank
-            _img_result = match_image(data["hero"]["headline"], image_bank, cat_key)
-            img    = data["hero"].get("image_url") or _img_result[0]
-            credit = get_image_credit(data["hero"].get("image_source", "")) or _img_result[1]
+            source_img = data["hero"].get("image_url", "")
+            bank_img, bank_credit = match_image(data["hero"]["headline"], image_bank, cat_key)
+            img    = source_img or bank_img
+            credit = bank_credit  # bank_credit is empty string if no match, that's fine
             data["hero"]["image_credit"] = credit
             # Second fallback: check content bank entries for matching images
             if not img:
