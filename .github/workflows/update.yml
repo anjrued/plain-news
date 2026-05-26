@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser anthropic requests
+        run: pip install feedparser anthropic requests json-repair
 
       - name: Generate news
         run: python scripts/generate.py
