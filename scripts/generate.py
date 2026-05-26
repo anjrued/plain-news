@@ -16,7 +16,6 @@ from pathlib import Path
 CATEGORIES = {
     "world": {
         "label": "World",
-        "front_page_hero": False,
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -862,7 +861,8 @@ def global_rank(all_cards):
         "Apply this weighting:\n"
         "1. Stories with direct US impact (economy, security, foreign policy, domestic policy, US deaths): highest priority — these should lead\n"
         "2. Major geopolitical developments affecting oil, trade, US allies, or global stability with US consequences: very high\n"
-        "3. International tragedies or crises with no direct US connection (foreign train bombings, foreign political crackdowns, regional conflicts not involving the US): these belong in the World section but should NOT lead the front page. Rank them below any story with direct US relevance, no matter how many casualties.\n"
+        "3. US military action, direct US involvement in foreign conflicts, or events with immediate major US consequences (oil supply, allied security, direct economic impact): treat as top tier regardless of category.\n"
+        "4. International tragedies or crises with no direct US connection (foreign train bombings, foreign political crackdowns, regional conflicts not involving the US): these belong in the World section but should NOT lead the front page. Rank them below any story with direct US relevance, no matter how many casualties.\n"
         "4. Follow-up stories: rank below genuinely new stories\n"
         "5. Sports, entertainment: rank below policy and crisis stories unless exceptionally significant\n"
         "When two stories seem equally important, use the timestamp as a tiebreaker.\n\n"
@@ -933,9 +933,7 @@ def fetch_market_data():
 
 def render_index(all_categories, market_data=None, market_live=False):
     timestamp = now_et()
-    # World category excluded from front page hero — stays in World tab only
-    front_page_cats = [c for c in all_categories if CATEGORIES.get(c["category_key"], {}).get("front_page_hero", True)]
-    top_cat = max(front_page_cats if front_page_cats else all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
+    top_cat = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
     # Build market ticker HTML from server-side data
