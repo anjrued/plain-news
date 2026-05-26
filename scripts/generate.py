@@ -571,9 +571,15 @@ def generate_category_content(category_key, category_label, headlines):
         try:
             from email.utils import parsedate_to_datetime
             dt = parsedate_to_datetime(h.get("published","")).astimezone(_tz.utc)
-            return (_now_utc - dt).total_seconds() > 48 * 3600
+            age_hrs = (_now_utc - dt).total_seconds() / 3600
+            return age_hrs > 48
         except Exception:
-            return False
+            return True
+    if category_label == "Politics":
+        print(f"  Politics pre-filter: {len(headlines)} headlines incoming")
+        for h in headlines[:8]:
+            stale = _is_stale(h)
+            print(f"    [stale={stale}] [{h.get('published','NO DATE')}] {h.get('title','')[:55]}")
     fresh = [h for h in headlines if not _is_stale(h)]
     headlines = fresh if len(fresh) >= 6 else headlines
 
@@ -1360,6 +1366,10 @@ def main():
             except Exception:
                 return True  # Can't parse date = treat as stale, exclude it
         fresh_h = [h for h in headlines if not _headline_stale(h)]
+        if cat_key == "politics":
+            print(f"  Politics debug: {len(headlines)} total, {len(fresh_h)} fresh")
+            for h in headlines[:5]:
+                print(f"    [{h.get('published','NO DATE')}] {h.get('title','')[:60]}")
         if len(fresh_h) >= 6:
             headlines = fresh_h
         if not headlines:
