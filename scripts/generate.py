@@ -548,21 +548,20 @@ Return ONLY valid JSON:
     raw = raw.strip()
 
     try:
-        data = json.loads(raw, strict=False)
-    except json.JSONDecodeError:
-        import re as _re
-        # Strategy 1: strip non-ASCII
-        cleaned = raw.encode("ascii", "ignore").decode("ascii")
+        from json_repair import repair_json
+        data = json.loads(repair_json(raw))
+    except Exception:
         try:
-            data = json.loads(cleaned, strict=False)
+            data = json.loads(raw, strict=False)
         except json.JSONDecodeError:
-            # Strategy 2: find JSON object boundaries
+            import re as _re
+            cleaned = raw.encode("ascii", "ignore").decode("ascii")
             try:
+                data = json.loads(cleaned, strict=False)
+            except json.JSONDecodeError:
                 start = cleaned.index("{")
                 end   = cleaned.rindex("}") + 1
                 data  = json.loads(cleaned[start:end], strict=False)
-            except (ValueError, json.JSONDecodeError) as e:
-                raise e
     data["category_key"]   = category_key
     data["category_label"] = category_label
 
