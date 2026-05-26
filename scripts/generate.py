@@ -243,7 +243,7 @@ FEED_PUBLISHER_MAP = {
     "apnews.com":        "AP News",
     "nytimes.com":       "The New York Times",
     "washingtonpost.com":"The Washington Post",
-    "politico.com":      "Politico",
+    "thehill.com":       "The Hill",
     "thehill.com":       "The Hill",
     "statnews.com":      "STAT News",
     "forbes.com":        "Forbes",
