@@ -1063,8 +1063,8 @@ def render_index(all_categories, market_data=None, market_live=False):
         paragraphs = make_paragraphs(hero["body"])
         img_url    = hero.get("image_url", "")
         img_credit = hero.get("image_credit", "")
-        credit_html = f'<span class="img-credit">Photo: {img_credit}</span>' if img_url and img_credit else ""
-        img_html   = f'<div class="hero-image-wrap"><img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">{credit_html}</div>' if img_url else ""
+        credit_html = f'<figcaption class="img-credit">Photo: {img_credit}</figcaption>' if img_url and img_credit else ""
+        img_html   = f'<figure class="hero-image-wrap"><img class="hero-image" src="{img_url}" alt="{hero["headline"]}" loading="lazy">{credit_html}</figure>' if img_url else ""
         pub_time   = hero.get("published") or f"Today, {timestamp}"
         return f"""
     <section class="hero{fade}" data-cat-hero="{cat_key}"{display}>
