@@ -52,6 +52,7 @@ CATEGORIES = {
     },
     "sports": {
         "label": "Sports",
+        "front_page_cap": 7,
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en-US&gl=US&ceid=US:en",
             "https://www.espn.com/espn/rss/news",
@@ -60,6 +61,7 @@ CATEGORIES = {
     },
     "entertainment": {
         "label": "Entertainment",
+        "front_page_cap": 7,
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=en-US&gl=US&ceid=US:en",
             "https://variety.com/feed/",
@@ -1056,12 +1058,16 @@ def render_index(all_categories, market_data=None, market_live=False):
     us_action_words = ["us strikes", "us military", "american forces", "u.s. strikes",
                        "u.s. military", "united states strikes", "trump orders", "pentagon"]
     def is_front_page_eligible(cat):
-        if CATEGORIES.get(cat["category_key"], {}).get("front_page_hero", True):
-            return True
-        headline = cat["hero"].get("headline", "").lower()
-        return any(w in headline for w in us_action_words)
+        if not CATEGORIES.get(cat["category_key"], {}).get("front_page_hero", True):
+            headline = cat["hero"].get("headline", "").lower()
+            return any(w in headline for w in us_action_words)
+        return True
+    def front_page_score(cat):
+        score = cat["hero"].get("urgency_score", 0)
+        cap   = CATEGORIES.get(cat["category_key"], {}).get("front_page_cap", 10)
+        return min(score, cap)
     eligible = [c for c in all_categories if is_front_page_eligible(c)]
-    top_cat  = max(eligible if eligible else all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
+    top_cat  = max(eligible if eligible else all_categories, key=front_page_score)
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
     # Build market ticker HTML from server-side data
