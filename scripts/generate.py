@@ -457,6 +457,8 @@ def generate_category_content(category_key, category_label, headlines):
     headlines_text = "\n".join(hl_line(i, h) for i, h in enumerate(headlines))
     # Final safety pass — remove any remaining characters that break JSON
     headlines_text = headlines_text.replace("\\", " ")
+    # Final nuclear sanitization — encode to ASCII and back to strip any remaining bad chars
+    headlines_text = headlines_text.encode("ascii", "ignore").decode("ascii")
 
     prompt = f"""Top headlines for {category_label}:
 
@@ -623,10 +625,16 @@ def now_et():
 
 
 def make_paragraphs(text):
+    if not text:
+        return ""
+    # Split on double newlines first, fall back to single newlines
+    paragraphs = text.split("\n\n")
+    if len(paragraphs) == 1:
+        paragraphs = text.split("\n")
     return "".join(
         f"<p>{p.strip()}</p>"
-        for p in text.split("\n\n")
-        if p.strip()
+        for p in paragraphs
+        if p.strip() and len(p.strip()) > 30
     )
 
 
