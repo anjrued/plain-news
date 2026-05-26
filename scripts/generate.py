@@ -16,6 +16,7 @@ from pathlib import Path
 CATEGORIES = {
     "world": {
         "label": "World",
+        "front_page_hero": False,
         "feeds": [
             "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en-US&gl=US&ceid=US:en",
             "https://feeds.bbci.co.uk/news/world/rss.xml",
@@ -1051,7 +1052,16 @@ def fetch_market_data():
 
 def render_index(all_categories, market_data=None, market_live=False):
     timestamp = now_et()
-    top_cat = max(all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
+    # World excluded from front page hero unless it involves direct US action
+    us_action_words = ["us strikes", "us military", "american forces", "u.s. strikes",
+                       "u.s. military", "united states strikes", "trump orders", "pentagon"]
+    def is_front_page_eligible(cat):
+        if CATEGORIES.get(cat["category_key"], {}).get("front_page_hero", True):
+            return True
+        headline = cat["hero"].get("headline", "").lower()
+        return any(w in headline for w in us_action_words)
+    eligible = [c for c in all_categories if is_front_page_eligible(c)]
+    top_cat  = max(eligible if eligible else all_categories, key=lambda c: c["hero"].get("urgency_score", 0))
     hero_desc = top_cat["hero"].get("headline", "News without the noise")[:120]
 
     # Build market ticker HTML from server-side data
